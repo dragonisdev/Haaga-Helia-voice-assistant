@@ -22,18 +22,18 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'Haaga Helia',
+  companyName: 'Haaga-Helia University of Applied Sciences',
   pageTitle: 'Haaga-Helia AI Voice Assistant',
-  pageDescription: 'AI voice assistant for Haaga-Helia students - ask about campus, thesis, student life in Finland and more',
+  pageDescription: 'Intelligent voice assistant for Haaga-Helia students - get help with studies, campus information, thesis guidance, and academic support',
 
   supportsChatInput: true,
   supportsVideoInput: true,
   supportsScreenShare: true,
   isPreConnectBufferEnabled: true,
 
-  logo: '/haagahelia_logo.png',
+  logo: '/haagahelia_logo_1.png',
   accent: '#002cf2',
-  logoDark: '/haagahelia_logo.png',
+  logoDark: '/haagahelia_logo_1.png',
   accentDark: '#1fd5f9',
   startButtonText: 'Start call',
 

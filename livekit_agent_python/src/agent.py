@@ -35,6 +35,7 @@ logger.addHandler(console_handler)
 load_dotenv(".env.local")
 
 class Assistant(Agent):
+    def __init__(self) -> None:
         super().__init__(
             instructions="""You are a friendly, reliable voice assistant for Haaga-Helia University of Applied Sciences that answers student questions, explains study-related topics, and completes tasks using available tools.
 
