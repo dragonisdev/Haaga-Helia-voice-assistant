@@ -34,30 +34,7 @@ logger.addHandler(console_handler)
 
 load_dotenv(".env.local")
 
-# Validate critical environment variables
-import os
-
-required_env_vars = {
-    "LIVEKIT_URL": os.getenv("LIVEKIT_URL"),
-    "LIVEKIT_API_KEY": os.getenv("LIVEKIT_API_KEY"),
-    "LIVEKIT_API_SECRET": os.getenv("LIVEKIT_API_SECRET"),
-    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-    "GLADIA_API_KEY": os.getenv("GLADIA_API_KEY"),
-    "ELEVEN_API_KEY": os.getenv("ELEVEN_API_KEY"),
-}
-
-missing_vars = [var for var, value in required_env_vars.items() if not value]
-if missing_vars:
-    logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
-    logger.error("Please check your .env.local file and ensure all API keys are configured.")
-    logger.error("TIP: ElevenLabs API key is required for text-to-speech functionality.")
-    sys.exit(1)
-
-logger.info("✅ All required environment variables are present")
-
-
 class Assistant(Agent):
-    def __init__(self) -> None:
         super().__init__(
             instructions="""You are a friendly, reliable voice assistant for Haaga-Helia University of Applied Sciences that answers student questions, explains study-related topics, and completes tasks using available tools.
 
@@ -380,6 +357,25 @@ async def console_entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
+    # Validate critical environment variables
+    required_env_vars = {
+        "LIVEKIT_URL": os.getenv("LIVEKIT_URL"),
+        "LIVEKIT_API_KEY": os.getenv("LIVEKIT_API_KEY"),
+        "LIVEKIT_API_SECRET": os.getenv("LIVEKIT_API_SECRET"),
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+        "GLADIA_API_KEY": os.getenv("GLADIA_API_KEY"),
+        "ELEVEN_API_KEY": os.getenv("ELEVEN_API_KEY"),
+    }
+
+    missing_vars = [var for var, value in required_env_vars.items() if not value]
+    if missing_vars:
+        logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+        logger.error("Please check your .env.local file and ensure all API keys are configured.")
+        logger.error("TIP: ElevenLabs API key is required for text-to-speech functionality.")
+        sys.exit(1)
+
+    logger.info("✅ All required environment variables are present")
+
     # Check if running in console mode
     if len(sys.argv) > 1 and sys.argv[1] == "console":
         # Console mode for local testing
