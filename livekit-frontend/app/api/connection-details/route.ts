@@ -168,7 +168,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const agentName: string | undefined = body?.room_config?.agents?.[0]?.agent_name;
     const agentMetadata: string | undefined = body?.room_config?.agents?.[0]?.metadata;
 
     // Generate cryptographically secure random IDs
