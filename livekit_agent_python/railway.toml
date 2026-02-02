@@ -2,7 +2,7 @@
 # Use Docker to build the image
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-watchpath = ["."]
+watchpath = ["src/agent.py", "pyproject.toml", "Dockerfile"]
 
 [deploy]
 # Restart policy for the service
