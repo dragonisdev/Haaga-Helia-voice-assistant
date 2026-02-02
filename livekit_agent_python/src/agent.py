@@ -126,6 +126,12 @@ async def agent_worker(ctx: JobContext):
         eleven_key = os.getenv('ELEVEN_API_KEY')
         logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
         
+        # TEMPORARY: Force OpenAI TTS due to ElevenLabs quota issues
+        use_elevenlabs = False
+        logger.warning("⚠️ ElevenLabs temporarily disabled - using OpenAI TTS")
+        
+        """
+        # Disabled ElevenLabs check - uncomment when quota is available
         use_elevenlabs = False
         if eleven_key:
             logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
@@ -146,8 +152,8 @@ async def agent_worker(ctx: JobContext):
                     logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {tier}")
                     logger.info(f"Debug: Character usage: {char_count}/{char_limit}")
                     
-                    # Check if we have enough characters remaining
-                    if char_limit > 0 and (char_limit - char_count) < 100:
+                    # Check if we have enough characters remaining (need at least 500 chars buffer)
+                    if char_limit > 0 and (char_limit - char_count) < 500:
                         logger.warning(f"⚠️ ElevenLabs character limit nearly exhausted ({char_count}/{char_limit}). Falling back to OpenAI TTS.")
                         use_elevenlabs = False
                     else:
@@ -158,6 +164,7 @@ async def agent_worker(ctx: JobContext):
             except Exception as e:
                 logger.error(f"Debug: ElevenLabs API test failed: {e}. Falling back to OpenAI TTS.")
                 use_elevenlabs = False
+        """
 
         if use_elevenlabs:
             # Use free-tier compatible settings
