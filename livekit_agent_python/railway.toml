@@ -1,0 +1,23 @@
+[build]
+# Use Docker to build the image
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Health check configuration
+# Railway will ping this endpoint to verify the service is healthy
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+# Restart policy for the service
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 2
+
+# Environment variables that Railway should inject
+# Note: Set these in Railway Dashboard -> Variables
+# Required variables:
+# - LIVEKIT_URL: Your LiveKit Cloud WebSocket URL (wss://your-project.livekit.cloud)
+# - LIVEKIT_API_KEY: Your LiveKit API key
+# - LIVEKIT_API_SECRET: Your LiveKit API secret
+# - OPENAI_API_KEY: Your OpenAI API key
+# - GLADIA_API_KEY: Your Gladia API key
+# - ELEVEN_API_KEY: Your ElevenLabs API key
