@@ -34,6 +34,27 @@ logger.addHandler(console_handler)
 
 load_dotenv(".env.local")
 
+# Validate critical environment variables
+import os
+
+required_env_vars = {
+    "LIVEKIT_URL": os.getenv("LIVEKIT_URL"),
+    "LIVEKIT_API_KEY": os.getenv("LIVEKIT_API_KEY"),
+    "LIVEKIT_API_SECRET": os.getenv("LIVEKIT_API_SECRET"),
+    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
+    "GLADIA_API_KEY": os.getenv("GLADIA_API_KEY"),
+    "ELEVEN_API_KEY": os.getenv("ELEVEN_API_KEY"),
+}
+
+missing_vars = [var for var, value in required_env_vars.items() if not value]
+if missing_vars:
+    logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+    logger.error("Please check your .env.local file and ensure all API keys are configured.")
+    logger.error("TIP: ElevenLabs API key is required for text-to-speech functionality.")
+    sys.exit(1)
+
+logger.info("✅ All required environment variables are present")
+
 
 class Assistant(Agent):
     def __init__(self) -> None:
@@ -118,16 +139,25 @@ async def agent_worker(ctx: JobContext):
         "client_ip": client_ip,  # Store IP for rate limiting analytics
     }
 
+    # Initialize TTS with error handling
+    try:
+        tts_instance = elevenlabs.TTS(
+            voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
+            model="eleven_multilingual_v2",
+        )
+        logger.info("✅ ElevenLabs TTS initialized successfully")
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize ElevenLabs TTS: {e}")
+        logger.error("Please verify your ELEVEN_API_KEY is valid and has available credits.")
+        raise
+
     session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),
         stt=gladia.STT(
             # Gladia supports 99+ languages with auto-detection
             # language=["en", "es", "fr"],  # specify languages for better accuracy
         ),
-        tts=elevenlabs.TTS(
-            voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
-            model="eleven_multilingual_v2",
-        ),
+        tts=tts_instance,
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
         preemptive_generation=True,
