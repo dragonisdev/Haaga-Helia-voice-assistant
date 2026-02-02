@@ -1,14 +1,23 @@
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
-import { headers } from 'next/headers';
-import crypto from 'crypto';
 
 type ConnectionDetails = {
   serverUrl: string;
   roomName: string;
   participantName: string;
   participantToken: string;
+};
+
+type RequestBody = {
+  room_config?: {
+    agents?: Array<{
+      agent_name?: string;
+      metadata?: string;
+    }>;
+  };
 };
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
@@ -25,14 +34,17 @@ const RATE_LIMIT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minute timeout
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 // Clean up old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, data] of rateLimitStore.entries()) {
-    if (now > data.resetTime) {
-      rateLimitStore.delete(ip);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [ip, data] of rateLimitStore.entries()) {
+      if (now > data.resetTime) {
+        rateLimitStore.delete(ip);
+      }
     }
-  }
-}, 10 * 60 * 1000);
+  },
+  10 * 60 * 1000
+);
 
 // Helper function to get client IP
 async function getClientIP(req: Request): Promise<string> {
@@ -41,14 +53,14 @@ async function getClientIP(req: Request): Promise<string> {
   const forwarded = headersList.get('x-forwarded-for');
   const realIP = headersList.get('x-real-ip');
   const cfConnectingIP = headersList.get('cf-connecting-ip'); // Cloudflare
-  
+
   if (forwarded) {
     // x-forwarded-for can be a comma-separated list, get the first one
     return forwarded.split(',')[0].trim();
   }
   if (realIP) return realIP;
   if (cfConnectingIP) return cfConnectingIP;
-  
+
   // Fallback (won't work in production behind proxy)
   return 'unknown';
 }
@@ -79,22 +91,24 @@ function checkRateLimit(ip: string): { allowed: boolean; resetTime?: number } {
 }
 
 // Input validation
-function validateRequestBody(body: any): { valid: boolean; error?: string } {
+function validateRequestBody(body: unknown): { valid: boolean; error?: string } {
   if (!body || typeof body !== 'object') {
     return { valid: false, error: 'Invalid request format' };
   }
 
+  const typedBody = body as RequestBody;
+
   // Validate agent_name if provided
-  if (body.room_config?.agents?.[0]?.agent_name) {
-    const agentName = body.room_config.agents[0].agent_name;
+  if (typedBody.room_config?.agents?.[0]?.agent_name) {
+    const agentName = typedBody.room_config.agents[0].agent_name;
     if (typeof agentName !== 'string' || agentName.length > 100) {
       return { valid: false, error: 'Invalid agent name' };
     }
   }
 
   // Validate metadata if provided
-  if (body.room_config?.agents?.[0]?.metadata) {
-    const metadata = body.room_config.agents[0].metadata;
+  if (typedBody.room_config?.agents?.[0]?.metadata) {
+    const metadata = typedBody.room_config.agents[0].metadata;
     if (typeof metadata !== 'string' || metadata.length > 1000) {
       return { valid: false, error: 'Invalid metadata' };
     }
@@ -116,15 +130,15 @@ export async function POST(req: Request) {
 
     // Get client IP for rate limiting
     const clientIP = await getClientIP(req);
-    
+
     // Check rate limit
     const rateLimitResult = checkRateLimit(clientIP);
     if (!rateLimitResult.allowed) {
       const resetDate = new Date(rateLimitResult.resetTime!);
       const resetHours = Math.ceil((rateLimitResult.resetTime! - Date.now()) / (60 * 60 * 1000));
-      
+
       console.warn(`Rate limit exceeded for IP: ${clientIP}`);
-      
+
       return NextResponse.json(
         {
           error: 'Rate limit exceeded',
@@ -136,7 +150,7 @@ export async function POST(req: Request) {
     }
 
     // Parse and validate request body
-    let body;
+    let body: RequestBody;
     try {
       body = await req.json();
     } catch (e) {
@@ -183,17 +197,17 @@ export async function POST(req: Request) {
       participantToken: participantToken,
       participantName,
     };
-    
+
     const responseHeaders = new Headers({
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
       'X-Content-Type-Options': 'nosniff',
     });
-    
+
     return NextResponse.json(data, { headers: responseHeaders });
   } catch (error) {
     // Log error server-side but don't expose details to client
     console.error('Error creating connection:', error);
-    
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -214,7 +228,7 @@ function createParticipantToken(
     ...userInfo,
     ttl: '10m', // Reduced from 15m to 10m for better security
   });
-  
+
   // Grant only necessary permissions for voice interaction
   const grant: VideoGrant = {
     room: roomName,

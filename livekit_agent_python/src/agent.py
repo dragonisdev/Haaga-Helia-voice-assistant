@@ -125,54 +125,59 @@ async def agent_worker(ctx: JobContext):
         # Debug: Check environment and API key
         eleven_key = os.getenv('ELEVEN_API_KEY')
         logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
+        
+        use_elevenlabs = False
         if eleven_key:
             logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
 
-            # Test ElevenLabs API connectivity
+            # Test ElevenLabs API connectivity and check character limits
             try:
-                import requests
                 response = requests.get('https://api.elevenlabs.io/v1/user',
                                       headers={'xi-api-key': eleven_key},
                                       timeout=10)
                 logger.info(f"Debug: ElevenLabs API status: {response.status_code}")
                 if response.status_code == 200:
                     data = response.json()
-                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {data.get('subscription', {}).get('tier', 'Unknown')}")
+                    subscription = data.get('subscription', {})
+                    char_count = subscription.get('character_count', 0)
+                    char_limit = subscription.get('character_limit', 0)
+                    tier = subscription.get('tier', 'Unknown')
+                    
+                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {tier}")
+                    logger.info(f"Debug: Character usage: {char_count}/{char_limit}")
+                    
+                    # Check if we have enough characters remaining
+                    if char_limit > 0 and (char_limit - char_count) < 100:
+                        logger.warning(f"⚠️ ElevenLabs character limit nearly exhausted ({char_count}/{char_limit}). Falling back to OpenAI TTS.")
+                        use_elevenlabs = False
+                    else:
+                        use_elevenlabs = True
                 else:
                     logger.error(f"Debug: ElevenLabs API error: {response.status_code} - {response.text[:200]}")
+                    use_elevenlabs = False
             except Exception as e:
-                logger.error(f"Debug: ElevenLabs API test failed: {e}")
+                logger.error(f"Debug: ElevenLabs API test failed: {e}. Falling back to OpenAI TTS.")
+                use_elevenlabs = False
 
-        # Debug: Check environment and API key
-        eleven_key = os.getenv('ELEVEN_API_KEY')
-        logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
-        if eleven_key:
-            logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
-
-            # Test ElevenLabs API connectivity
-            try:
-                import requests
-                response = requests.get('https://api.elevenlabs.io/v1/user',
-                                      headers={'xi-api-key': eleven_key},
-                                      timeout=10)
-                logger.info(f"Debug: ElevenLabs API status: {response.status_code}")
-                if response.status_code == 200:
-                    data = response.json()
-                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {data.get('subscription', {}).get('tier', 'Unknown')}")
-                else:
-                    logger.error(f"Debug: ElevenLabs API error: {response.status_code} - {response.text[:200]}")
-            except Exception as e:
-                logger.error(f"Debug: ElevenLabs API test failed: {e}")
-
-        tts_instance = elevenlabs.TTS(
-            voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
-            model="eleven_multilingual_v2",
-        )
-        logger.info("✅ ElevenLabs TTS initialized successfully")
+        if use_elevenlabs:
+            # Use free-tier compatible settings
+            tts_instance = elevenlabs.TTS(
+                voice_id="21m00Tcm4TlvDq8ikWAM",  # Rachel - free tier voice
+                model="eleven_monolingual_v1",  # Free tier model
+            )
+            logger.info("✅ ElevenLabs TTS initialized (Rachel voice, free tier model)")
+        else:
+            # Fallback to OpenAI TTS - more reliable
+            tts_instance = openai.TTS(
+                voice="alloy",
+                model="tts-1",
+            )
+            logger.info("✅ OpenAI TTS initialized (fallback)")
+            
     except Exception as e:
-        logger.error(f"❌ Failed to initialize ElevenLabs TTS: {e}")
-        logger.error("Please verify your ELEVEN_API_KEY is valid and has available credits.")
-        raise
+        logger.error(f"❌ Failed to initialize TTS: {e}")
+        logger.error("Falling back to OpenAI TTS as last resort.")
+        tts_instance = openai.TTS(voice="alloy", model="tts-1")
 
     session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),

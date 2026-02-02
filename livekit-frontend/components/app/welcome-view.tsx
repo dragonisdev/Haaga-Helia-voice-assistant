@@ -49,18 +49,16 @@ export const WelcomeView = ({
           {startButtonText}
         </Button>
 
-        <p className="text-muted-foreground max-w-prose pt-4 text-sm leading-6 font-normal text-center">
-          Have questions related to your studies, thesis or even for what is for lunch today? Ask our AI in your own native language!
+        <p className="text-muted-foreground max-w-prose pt-4 text-center text-sm leading-6 font-normal">
+          Have questions related to your studies, thesis or even for what is for lunch today? Ask
+          our AI in your own native language!
         </p>
       </section>
 
       <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
         <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
           See how we process your data:{' '}
-          <a
-            href="/privacy"
-            className="underline"
-          >
+          <a href="/privacy" className="underline">
             Privacy Policy
           </a>
           .
