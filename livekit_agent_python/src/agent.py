@@ -22,6 +22,8 @@ from livekit.agents import (
 from livekit.agents.llm import function_tool
 from livekit.plugins import gladia, noise_cancellation, openai, silero, elevenlabs
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+import requests
+import requests
 
 logger = logging.getLogger("agent")
 logger.setLevel(logging.INFO)
@@ -120,6 +122,48 @@ async def agent_worker(ctx: JobContext):
 
     # Initialize TTS with error handling
     try:
+        # Debug: Check environment and API key
+        eleven_key = os.getenv('ELEVEN_API_KEY')
+        logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
+        if eleven_key:
+            logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
+
+            # Test ElevenLabs API connectivity
+            try:
+                import requests
+                response = requests.get('https://api.elevenlabs.io/v1/user',
+                                      headers={'xi-api-key': eleven_key},
+                                      timeout=10)
+                logger.info(f"Debug: ElevenLabs API status: {response.status_code}")
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {data.get('subscription', {}).get('tier', 'Unknown')}")
+                else:
+                    logger.error(f"Debug: ElevenLabs API error: {response.status_code} - {response.text[:200]}")
+            except Exception as e:
+                logger.error(f"Debug: ElevenLabs API test failed: {e}")
+
+        # Debug: Check environment and API key
+        eleven_key = os.getenv('ELEVEN_API_KEY')
+        logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
+        if eleven_key:
+            logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
+
+            # Test ElevenLabs API connectivity
+            try:
+                import requests
+                response = requests.get('https://api.elevenlabs.io/v1/user',
+                                      headers={'xi-api-key': eleven_key},
+                                      timeout=10)
+                logger.info(f"Debug: ElevenLabs API status: {response.status_code}")
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {data.get('subscription', {}).get('tier', 'Unknown')}")
+                else:
+                    logger.error(f"Debug: ElevenLabs API error: {response.status_code} - {response.text[:200]}")
+            except Exception as e:
+                logger.error(f"Debug: ElevenLabs API test failed: {e}")
+
         tts_instance = elevenlabs.TTS(
             voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
             model="eleven_multilingual_v2",
