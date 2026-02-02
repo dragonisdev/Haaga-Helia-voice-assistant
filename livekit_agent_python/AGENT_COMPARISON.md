@@ -89,7 +89,7 @@ session = AgentSession(
     stt=gladia.STT(),  # Supports 99+ languages with auto-detection
     llm=openai.LLM(model="gpt-4o-mini"),
     tts=elevenlabs.TTS(
-        voice_id="21m00Tcm4TlvDq8ikWAM",
+        voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
         model="eleven_multilingual_v2",
     ),
     turn_detection=MultilingualModel(),
