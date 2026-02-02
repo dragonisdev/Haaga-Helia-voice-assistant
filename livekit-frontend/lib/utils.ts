@@ -99,16 +99,19 @@ export function getSandboxTokenSource(appConfig: AppConfig) {
   return TokenSource.custom(async () => {
     const url = new URL(process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!, window.location.origin);
     const sandboxId = appConfig.sandboxId ?? '';
-    
+
     // Retrieve metadata from sessionStorage if available
-    const metadata = typeof window !== 'undefined' ? sessionStorage.getItem('agent_metadata') : null;
-    
+    const metadata =
+      typeof window !== 'undefined' ? sessionStorage.getItem('agent_metadata') : null;
+
     const roomConfig = appConfig.agentName
       ? {
-          agents: [{ 
-            agent_name: appConfig.agentName,
-            metadata: metadata || undefined,
-          }],
+          agents: [
+            {
+              agent_name: appConfig.agentName,
+              metadata: metadata || undefined,
+            },
+          ],
         }
       : undefined;
 
@@ -123,12 +126,12 @@ export function getSandboxTokenSource(appConfig: AppConfig) {
           room_config: roomConfig,
         }),
       });
-      
+
       // Clear metadata after use
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('agent_metadata');
       }
-      
+
       return await res.json();
     } catch (error) {
       console.error('Error fetching connection details:', error);

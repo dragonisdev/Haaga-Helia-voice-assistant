@@ -34,7 +34,7 @@ export const WelcomeView = ({
 
   return (
     <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center px-4">
+      <section className="bg-background flex flex-col items-center justify-center px-4 text-center">
         <WelcomeImage />
 
         <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">

@@ -7,6 +7,7 @@ This implementation allows users to submit custom instructions through a fronten
 ## How It Works
 
 ### 1. **Frontend Form** (`components/app/welcome-view.tsx`)
+
 - Added a textarea input where users can enter custom instructions for the agent
 - When the user clicks "Start Call", the instructions are formatted as JSON metadata:
   ```json
@@ -16,28 +17,34 @@ This implementation allows users to submit custom instructions through a fronten
   ```
 
 ### 2. **Metadata Flow** (`components/app/view-controller.tsx`)
+
 - The metadata is stored in `sessionStorage` when the user clicks "Start Call"
 - This temporary storage allows the metadata to be accessed when the connection is established
 
-### 3. **Token Creation** 
+### 3. **Token Creation**
+
 Two paths depending on your setup:
 
 #### Option A: Sandbox Mode (`lib/utils.ts` - `getSandboxTokenSource`)
+
 - Retrieves metadata from `sessionStorage`
 - Includes it in the room configuration when fetching connection details
 - Clears the metadata after use
 
 #### Option B: Standard Mode (`components/app/app.tsx`)
+
 - Custom token source that retrieves metadata from `sessionStorage`
 - Includes it in the room configuration when calling `/api/connection-details`
 - Clears the metadata after use
 
 ### 4. **API Route** (`app/api/connection-details/route.ts`)
+
 - Accepts metadata from the request body
 - Passes it to the `RoomAgentDispatch` configuration
 - Creates an access token with the metadata included
 
 ### 5. **Agent Consumption** (Your Python Agent)
+
 Your agent already has the code to consume this metadata:
 
 ```python
@@ -54,7 +61,7 @@ The `ctx.job.metadata` in your `entrypoint` function contains the JSON string wi
 ## Data Flow Diagram
 
 ```
-User fills form → Click "Start Call" 
+User fills form → Click "Start Call"
     ↓
 metadata stored in sessionStorage
     ↓
@@ -82,6 +89,7 @@ Agent uses {{metadata.information}} as instructions
    - Agent connects with those specific instructions
 
 2. **What the agent receives:**
+
    ```json
    {
      "information": "You are a friendly customer support agent who specializes in billing questions"
@@ -109,6 +117,7 @@ Agent uses {{metadata.information}} as instructions
 ## Customization
 
 ### Extend the Form
+
 You can add more fields to capture additional metadata:
 
 ```tsx
@@ -121,6 +130,7 @@ const metadata = JSON.stringify({
 ```
 
 Then access them in your agent:
+
 ```python
 instructions=self._templater.render("""
   {{metadata.information}}
@@ -130,6 +140,7 @@ instructions=self._templater.render("""
 ```
 
 ### Validation
+
 Add validation to ensure users provide valid instructions:
 
 ```tsx
@@ -144,7 +155,7 @@ const handleStartCall = () => {
 
 ## Troubleshooting
 
-1. **Agent not receiving metadata**: 
+1. **Agent not receiving metadata**:
    - Check browser console for errors
    - Verify the agent name matches in both frontend and backend
    - Ensure your agent is using explicit dispatch (has `agent_name` set)

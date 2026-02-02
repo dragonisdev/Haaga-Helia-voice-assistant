@@ -31,14 +31,16 @@ export function App({ appConfig }: AppProps) {
     if (typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string') {
       return getSandboxTokenSource(appConfig);
     }
-    
+
     // Custom token source that includes metadata
     return TokenSource.custom(async () => {
       const roomConfig = appConfig.agentName
         ? {
-            agents: [{ 
-              agent_name: appConfig.agentName,
-            }],
+            agents: [
+              {
+                agent_name: appConfig.agentName,
+              },
+            ],
           }
         : undefined;
 
@@ -52,7 +54,7 @@ export function App({ appConfig }: AppProps) {
             room_config: roomConfig,
           }),
         });
-        
+
         return await res.json();
       } catch (error) {
         console.error('Error fetching connection details:', error);
