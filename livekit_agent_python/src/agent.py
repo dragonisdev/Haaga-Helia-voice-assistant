@@ -23,6 +23,14 @@ from livekit.plugins import gladia, noise_cancellation, openai, silero, elevenla
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")
+logger.setLevel(logging.INFO)
+
+# Add console handler for production logging
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 load_dotenv(".env.local")
 
