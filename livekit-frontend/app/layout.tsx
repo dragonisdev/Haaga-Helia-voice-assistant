@@ -2,7 +2,6 @@ import { Public_Sans } from 'next/font/google';
 import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { ThemeProvider } from '@/components/app/theme-provider';
-import { ThemeToggle } from '@/components/app/theme-toggle';
 import { cn } from '@/lib/shadcn/utils';
 import { getAppConfig, getStyles } from '@/lib/utils';
 import '@/styles/globals.css';
@@ -75,35 +74,31 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <a
               target="_blank"
               rel="noopener noreferrer"
-              href="https://livekit.io"
+              href="https://haaga-helia.fi"
               className="scale-100 transition-transform duration-300 hover:scale-110"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logo} alt={`${companyName} Logo`} className="block size-6 dark:hidden" />
+              <img src={logo} alt={`${companyName} Logo`} className="block h-8 w-auto object-contain dark:hidden" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoDark ?? logo}
                 alt={`${companyName} Logo`}
-                className="hidden size-6 dark:block"
+                className="hidden h-8 w-auto object-contain dark:block"
               />
             </a>
             <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
-              Built with{' '}
               <a
                 target="_blank"
                 rel="noopener noreferrer"
-                href="https://docs.livekit.io/agents"
+                href="https://github.com/dragonisdev/Haaga-Helia-voice-assistant"
                 className="underline underline-offset-4"
               >
-                LiveKit Agents
+                Project Repository
               </a>
             </span>
           </header>
 
           {children}
-          <div className="group fixed bottom-0 left-1/2 z-50 mb-2 -translate-x-1/2">
-            <ThemeToggle className="translate-y-20 transition-transform delay-150 duration-300 group-hover:translate-y-0" />
-          </div>
         </ThemeProvider>
       </body>
     </html>

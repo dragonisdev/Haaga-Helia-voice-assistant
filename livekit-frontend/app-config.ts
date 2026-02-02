@@ -22,18 +22,18 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'LiveKit',
-  pageTitle: 'LiveKit Voice Agent',
-  pageDescription: 'A voice agent built with LiveKit',
+  companyName: 'Haaga Helia',
+  pageTitle: 'Haaga-Helia AI Voice Assistant',
+  pageDescription: 'AI voice assistant for Haaga-Helia students - ask about campus, thesis, student life in Finland and more',
 
   supportsChatInput: true,
   supportsVideoInput: true,
   supportsScreenShare: true,
   isPreConnectBufferEnabled: true,
 
-  logo: '/lk-logo.svg',
+  logo: '/haagahelia_logo_1.png',
   accent: '#002cf2',
-  logoDark: '/lk-logo-dark.svg',
+  logoDark: '/haagahelia_logo_1.png',
   accentDark: '#1fd5f9',
   startButtonText: 'Start call',
 
