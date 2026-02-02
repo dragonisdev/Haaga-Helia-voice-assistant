@@ -17,8 +17,9 @@ const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
 // Rate limiting configuration
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS_PER_HOUR = 5; // Max sessions per IP per hour
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_MINUTE = 5; // Max sessions per IP per minute
+const RATE_LIMIT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minute timeout
 
 // In-memory rate limit store (use Redis in production for multi-instance deployments)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -66,7 +67,9 @@ function checkRateLimit(ip: string): { allowed: boolean; resetTime?: number } {
     return { allowed: true };
   }
 
-  if (record.count >= MAX_REQUESTS_PER_HOUR) {
+  if (record.count >= MAX_REQUESTS_PER_MINUTE) {
+    // Set timeout for 3 minutes
+    record.resetTime = now + RATE_LIMIT_TIMEOUT_MS;
     return { allowed: false, resetTime: record.resetTime };
   }
 

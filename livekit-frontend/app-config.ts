@@ -31,9 +31,9 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   supportsScreenShare: true,
   isPreConnectBufferEnabled: true,
 
-  logo: '/haagahelia_logo_1.png',
+  logo: '/haagahelia_logo.png',
   accent: '#002cf2',
-  logoDark: '/haagahelia_logo_1.png',
+  logoDark: '/haagahelia_logo.png',
   accentDark: '#1fd5f9',
   startButtonText: 'Start call',
 
