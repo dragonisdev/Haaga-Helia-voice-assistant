@@ -34,14 +34,10 @@ export function App({ appConfig }: AppProps) {
     
     // Custom token source that includes metadata
     return TokenSource.custom(async () => {
-      // Retrieve metadata from sessionStorage if available
-      const metadata = typeof window !== 'undefined' ? sessionStorage.getItem('agent_metadata') : null;
-      
       const roomConfig = appConfig.agentName
         ? {
             agents: [{ 
               agent_name: appConfig.agentName,
-              metadata: metadata || undefined,
             }],
           }
         : undefined;
@@ -56,11 +52,6 @@ export function App({ appConfig }: AppProps) {
             room_config: roomConfig,
           }),
         });
-        
-        // Clear metadata after use
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('agent_metadata');
-        }
         
         return await res.json();
       } catch (error) {

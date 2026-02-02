@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 function WelcomeImage() {
@@ -21,7 +20,7 @@ function WelcomeImage() {
 
 interface WelcomeViewProps {
   startButtonText: string;
-  onStartCall: (metadata?: string) => void;
+  onStartCall: () => void;
 }
 
 export const WelcomeView = ({
@@ -29,14 +28,8 @@ export const WelcomeView = ({
   onStartCall,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
-  const [agentInstructions, setAgentInstructions] = useState('');
-
   const handleStartCall = () => {
-    // Pass the instructions as metadata in JSON format
-    const metadata = JSON.stringify({
-      information: agentInstructions || 'You are a helpful AI assistant.',
-    });
-    onStartCall(metadata);
+    onStartCall();
   };
 
   return (
@@ -47,26 +40,6 @@ export const WelcomeView = ({
         <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
           Chat live with your voice AI agent
         </p>
-
-        <div className="w-full max-w-xl mt-6">
-          <label
-            htmlFor="agent-instructions"
-            className="block text-sm font-medium text-foreground mb-2 text-left"
-          >
-            Agent Instructions
-          </label>
-          <textarea
-            id="agent-instructions"
-            value={agentInstructions}
-            onChange={(e) => setAgentInstructions(e.target.value)}
-            placeholder="Enter instructions for your AI agent (e.g., 'You are a friendly customer support assistant who helps users with billing questions.')"
-            className="w-full min-h-[120px] p-3 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
-            rows={4}
-          />
-          <p className="text-xs text-muted-foreground mt-2 text-left">
-            These instructions will define your agent&apos;s behavior and personality.
-          </p>
-        </div>
 
         <Button
           size="lg"

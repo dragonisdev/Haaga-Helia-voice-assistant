@@ -34,11 +34,7 @@ interface ViewControllerProps {
 export function ViewController({ appConfig }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
 
-  const handleStartCall = (metadata?: string) => {
-    // Store metadata in sessionStorage to be retrieved by token source
-    if (metadata) {
-      sessionStorage.setItem('agent_metadata', metadata);
-    }
+  const handleStartCall = () => {
     start();
   };
 
