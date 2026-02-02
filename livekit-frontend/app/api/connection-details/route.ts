@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
 import { RoomConfiguration } from '@livekit/protocol';
+import { headers } from 'next/headers';
+import crypto from 'crypto';
 
 type ConnectionDetails = {
   serverUrl: string;
@@ -14,36 +16,161 @@ const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_REQUESTS_PER_HOUR = 5; // Max sessions per IP per hour
+
+// In-memory rate limit store (use Redis in production for multi-instance deployments)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+// Clean up old entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of rateLimitStore.entries()) {
+    if (now > data.resetTime) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000);
+
+// Helper function to get client IP
+async function getClientIP(req: Request): Promise<string> {
+  const headersList = await headers();
+  // Try various headers that might contain the real IP
+  const forwarded = headersList.get('x-forwarded-for');
+  const realIP = headersList.get('x-real-ip');
+  const cfConnectingIP = headersList.get('cf-connecting-ip'); // Cloudflare
+  
+  if (forwarded) {
+    // x-forwarded-for can be a comma-separated list, get the first one
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIP) return realIP;
+  if (cfConnectingIP) return cfConnectingIP;
+  
+  // Fallback (won't work in production behind proxy)
+  return 'unknown';
+}
+
+// Rate limiting check
+function checkRateLimit(ip: string): { allowed: boolean; resetTime?: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(ip);
+
+  if (!record || now > record.resetTime) {
+    // New window
+    rateLimitStore.set(ip, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return { allowed: true };
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_HOUR) {
+    return { allowed: false, resetTime: record.resetTime };
+  }
+
+  // Increment counter
+  record.count++;
+  return { allowed: true };
+}
+
+// Input validation
+function validateRequestBody(body: any): { valid: boolean; error?: string } {
+  if (!body || typeof body !== 'object') {
+    return { valid: false, error: 'Invalid request format' };
+  }
+
+  // Validate agent_name if provided
+  if (body.room_config?.agents?.[0]?.agent_name) {
+    const agentName = body.room_config.agents[0].agent_name;
+    if (typeof agentName !== 'string' || agentName.length > 100) {
+      return { valid: false, error: 'Invalid agent name' };
+    }
+  }
+
+  // Validate metadata if provided
+  if (body.room_config?.agents?.[0]?.metadata) {
+    const metadata = body.room_config.agents[0].metadata;
+    if (typeof metadata !== 'string' || metadata.length > 1000) {
+      return { valid: false, error: 'Invalid metadata' };
+    }
+  }
+
+  return { valid: true };
+}
+
 // don't cache the results
 export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
-    if (LIVEKIT_URL === undefined) {
-      throw new Error('LIVEKIT_URL is not defined');
-    }
-    if (API_KEY === undefined) {
-      throw new Error('LIVEKIT_API_KEY is not defined');
-    }
-    if (API_SECRET === undefined) {
-      throw new Error('LIVEKIT_API_SECRET is not defined');
+    // Check environment variables
+    if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
+      console.error('Missing required environment variables');
+      return new NextResponse('Service temporarily unavailable', { status: 503 });
     }
 
-    // Parse agent configuration from request body
-    const body = await req.json();
+    // Get client IP for rate limiting
+    const clientIP = await getClientIP(req);
+    
+    // Check rate limit
+    const rateLimitResult = checkRateLimit(clientIP);
+    if (!rateLimitResult.allowed) {
+      const resetDate = new Date(rateLimitResult.resetTime!);
+      const resetHours = Math.ceil((rateLimitResult.resetTime! - Date.now()) / (60 * 60 * 1000));
+      
+      console.warn(`Rate limit exceeded for IP: ${clientIP}`);
+      
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `You have exceeded the maximum number of sessions. Please try again in ${resetHours} hour${resetHours > 1 ? 's' : ''}.`,
+          retryAfter: resetDate.toISOString(),
+        },
+        { status: 429 }
+      );
+    }
+
+    // Parse and validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return NextResponse.json(
+        { error: 'Invalid request', message: 'Request body must be valid JSON' },
+        { status: 400 }
+      );
+    }
+
+    const validation = validateRequestBody(body);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: 'Invalid request', message: validation.error },
+        { status: 400 }
+      );
+    }
+
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
     const agentMetadata: string | undefined = body?.room_config?.agents?.[0]?.metadata;
 
-    // Generate participant token
-    const participantName = 'user';
-    const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+    // Generate cryptographically secure random IDs
+    const participantName = 'anonymous_user';
+    const participantIdentity = `user_${crypto.randomUUID()}`;
+    const roomName = `room_${crypto.randomUUID()}`;
+
+    // Include IP in metadata for agent to store in transcript
+    const enhancedMetadata = JSON.stringify({
+      ...(agentMetadata ? JSON.parse(agentMetadata) : {}),
+      client_ip: clientIP,
+      session_created: new Date().toISOString(),
+    });
 
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
       roomName,
       agentName,
-      agentMetadata
+      enhancedMetadata
     );
 
     // Return connection details
@@ -53,15 +180,24 @@ export async function POST(req: Request) {
       participantToken: participantToken,
       participantName,
     };
-    const headers = new Headers({
-      'Cache-Control': 'no-store',
+    
+    const responseHeaders = new Headers({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'X-Content-Type-Options': 'nosniff',
     });
-    return NextResponse.json(data, { headers });
+    
+    return NextResponse.json(data, { headers: responseHeaders });
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(error);
-      return new NextResponse(error.message, { status: 500 });
-    }
+    // Log error server-side but don't expose details to client
+    console.error('Error creating connection:', error);
+    
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        message: 'Unable to create connection. Please try again later.',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -73,14 +209,16 @@ function createParticipantToken(
 ): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, {
     ...userInfo,
-    ttl: '15m',
+    ttl: '10m', // Reduced from 15m to 10m for better security
   });
+  
+  // Grant only necessary permissions for voice interaction
   const grant: VideoGrant = {
     room: roomName,
     roomJoin: true,
-    canPublish: true,
-    canPublishData: true,
-    canSubscribe: true,
+    canPublish: true, // Allow audio/video publishing
+    canPublishData: false, // Prevent data channel abuse (no text chat)
+    canSubscribe: true, // Allow receiving agent audio
   };
   at.addGrant(grant);
 
