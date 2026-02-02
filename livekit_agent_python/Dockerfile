@@ -65,5 +65,5 @@ RUN uv run src/agent.py download-files
 
 # Run the application using UV
 # UV will activate the virtual environment and run the agent.
-# The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
-CMD ["uv", "run", "src/agent.py", "start"]
+# No arguments = production server mode (connects to LiveKit Cloud)
+CMD ["uv", "run", "src/agent.py"]

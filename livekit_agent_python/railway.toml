@@ -4,10 +4,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-# Health check configuration
-# Railway will ping this endpoint to verify the service is healthy
-healthcheckPath = "/health"
-healthcheckTimeout = 300
 # Restart policy for the service
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 2
