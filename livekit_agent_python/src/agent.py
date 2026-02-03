@@ -20,10 +20,8 @@ from livekit.agents import (
     room_io,
 )
 from livekit.agents.llm import function_tool
-from livekit.plugins import gladia, noise_cancellation, openai, silero, elevenlabs
+from livekit.plugins import gladia, noise_cancellation, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
-import requests
-import requests
 
 logger = logging.getLogger("agent")
 logger.setLevel(logging.INFO)
@@ -120,71 +118,12 @@ async def agent_worker(ctx: JobContext):
         "client_ip": client_ip,  # Store IP for rate limiting analytics
     }
 
-    # Initialize TTS with error handling
-    try:
-        # Debug: Check environment and API key
-        eleven_key = os.getenv('ELEVEN_API_KEY')
-        logger.info(f"Debug: ELEVEN_API_KEY present: {bool(eleven_key)}")
-        
-        # TEMPORARY: Force OpenAI TTS due to ElevenLabs quota issues
-        use_elevenlabs = False
-        logger.warning("⚠️ ElevenLabs temporarily disabled - using OpenAI TTS")
-        
-        """
-        # Disabled ElevenLabs check - uncomment when quota is available
-        use_elevenlabs = False
-        if eleven_key:
-            logger.info(f"Debug: ELEVEN_API_KEY length: {len(eleven_key)}, starts with sk_: {eleven_key.startswith('sk_')}")
-
-            # Test ElevenLabs API connectivity and check character limits
-            try:
-                response = requests.get('https://api.elevenlabs.io/v1/user',
-                                      headers={'xi-api-key': eleven_key},
-                                      timeout=10)
-                logger.info(f"Debug: ElevenLabs API status: {response.status_code}")
-                if response.status_code == 200:
-                    data = response.json()
-                    subscription = data.get('subscription', {})
-                    char_count = subscription.get('character_count', 0)
-                    char_limit = subscription.get('character_limit', 0)
-                    tier = subscription.get('tier', 'Unknown')
-                    
-                    logger.info(f"Debug: ElevenLabs user: {data.get('first_name', 'Unknown')}, subscription: {tier}")
-                    logger.info(f"Debug: Character usage: {char_count}/{char_limit}")
-                    
-                    # Check if we have enough characters remaining (need at least 500 chars buffer)
-                    if char_limit > 0 and (char_limit - char_count) < 500:
-                        logger.warning(f"⚠️ ElevenLabs character limit nearly exhausted ({char_count}/{char_limit}). Falling back to OpenAI TTS.")
-                        use_elevenlabs = False
-                    else:
-                        use_elevenlabs = True
-                else:
-                    logger.error(f"Debug: ElevenLabs API error: {response.status_code} - {response.text[:200]}")
-                    use_elevenlabs = False
-            except Exception as e:
-                logger.error(f"Debug: ElevenLabs API test failed: {e}. Falling back to OpenAI TTS.")
-                use_elevenlabs = False
-        """
-
-        if use_elevenlabs:
-            # Use free-tier compatible settings
-            tts_instance = elevenlabs.TTS(
-                voice_id="21m00Tcm4TlvDq8ikWAM",  # Rachel - free tier voice
-                model="eleven_monolingual_v1",  # Free tier model
-            )
-            logger.info("✅ ElevenLabs TTS initialized (Rachel voice, free tier model)")
-        else:
-            # Fallback to OpenAI TTS - more reliable
-            tts_instance = openai.TTS(
-                voice="alloy",
-                model="tts-1",
-            )
-            logger.info("✅ OpenAI TTS initialized (fallback)")
-            
-    except Exception as e:
-        logger.error(f"❌ Failed to initialize TTS: {e}")
-        logger.error("Falling back to OpenAI TTS as last resort.")
-        tts_instance = openai.TTS(voice="alloy", model="tts-1")
+    # Initialize OpenAI TTS
+    tts_instance = openai.TTS(
+        voice="alloy",  # Options: alloy, echo, fable, onyx, nova, shimmer
+        model="tts-1",  # tts-1 is faster, tts-1-hd has higher quality
+    )
+    logger.info("✅ OpenAI TTS initialized (voice: alloy, model: tts-1)")
 
     session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),
@@ -330,9 +269,9 @@ async def console_entrypoint(ctx: JobContext):
             # Gladia supports 99+ languages with auto-detection
             # language=["en", "es", "fr"],  # specify languages for better accuracy
         ),
-        tts=elevenlabs.TTS(
-            voice_id="pNInz6obpgDQGcFmaJgB",  # Adam - better multilingual support
-            model="eleven_multilingual_v2",
+        tts=openai.TTS(
+            voice="alloy",  # Options: alloy, echo, fable, onyx, nova, shimmer
+            model="tts-1",
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
@@ -424,14 +363,12 @@ if __name__ == "__main__":
             "LIVEKIT_API_SECRET": os.getenv("LIVEKIT_API_SECRET"),
             "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
             "GLADIA_API_KEY": os.getenv("GLADIA_API_KEY"),
-            "ELEVEN_API_KEY": os.getenv("ELEVEN_API_KEY"),
         }
 
         missing_vars = [var for var, value in required_env_vars.items() if not value]
         if missing_vars:
             logger.error(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
             logger.error("Please check your .env.local file and ensure all API keys are configured.")
-            logger.error("TIP: ElevenLabs API key is required for text-to-speech functionality.")
             sys.exit(1)
 
         logger.info("✅ All required environment variables are present")
