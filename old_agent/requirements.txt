@@ -1,0 +1,17 @@
+# LiveKit Voice AI Agent Dependencies
+
+# LiveKit Core
+livekit>=0.17.0
+livekit-agents[openai,deepgram,silero]>=0.10.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# HTTP Client (for backend API calls)
+httpx>=0.27.0
+
+# Database (optional - if using Supabase directly)
+# supabase>=2.0.0
+
+# Utilities
+python-dateutil>=2.8.2

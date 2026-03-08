@@ -33,18 +33,33 @@ const RATE_LIMIT_TIMEOUT_MS = 3 * 60 * 1000; // 3 minute timeout
 // In-memory rate limit store (use Redis in production for multi-instance deployments)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-// Clean up old entries every 10 minutes
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [ip, data] of rateLimitStore.entries()) {
-      if (now > data.resetTime) {
-        rateLimitStore.delete(ip);
+// Clean up old entries every 10 minutes - store interval ID to prevent memory leaks
+let cleanupIntervalId: NodeJS.Timeout | null = null;
+
+// Initialize cleanup interval only once
+if (!cleanupIntervalId) {
+  cleanupIntervalId = setInterval(
+    () => {
+      const now = Date.now();
+      for (const [ip, data] of rateLimitStore.entries()) {
+        if (now > data.resetTime) {
+          rateLimitStore.delete(ip);
+        }
       }
-    }
-  },
-  10 * 60 * 1000
-);
+    },
+    10 * 60 * 1000
+  );
+  
+  // Ensure cleanup on module unload (for hot reload in dev)
+  if (typeof process !== 'undefined') {
+    process.on('beforeExit', () => {
+      if (cleanupIntervalId) {
+        clearInterval(cleanupIntervalId);
+        cleanupIntervalId = null;
+      }
+    });
+  }
+}
 
 // Helper function to get client IP
 async function getClientIP(req: Request): Promise<string> {

@@ -29,6 +29,8 @@ export function useAgentErrors() {
   const { isConnected, end } = useSessionContext();
 
   useEffect(() => {
+    let isCleanedUp = false;
+
     if (isConnected && agent.state === 'failed') {
       const reasons = agent.failureReasons;
 
@@ -59,7 +61,13 @@ export function useAgentErrors() {
         ),
       });
 
-      end();
+      if (!isCleanedUp) {
+        end();
+      }
     }
+
+    return () => {
+      isCleanedUp = true;
+    };
   }, [agent, isConnected, end]);
 }

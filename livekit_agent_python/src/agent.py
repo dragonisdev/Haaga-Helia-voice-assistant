@@ -149,27 +149,40 @@ async def agent_worker(ctx: JobContext):
         user_text = ev.alternatives[0].text if ev.alternatives else ""
         user_lang = getattr(ev, "language", "unknown")
         
-        transcript_messages.append({
+        message_data = {
             "role": "user",
             "content": user_text,
             "timestamp": datetime.utcnow().isoformat(),
             "language": user_lang,
-        })
+        }
+        transcript_messages.append(message_data)
         
         # Log user turn (INFO level for production visibility)
         logger.info(f"👤 USER [{user_lang}]: {user_text}")
+        
+        # Prevent unbounded memory growth - limit transcript size
+        if len(transcript_messages) > 1000:
+            logger.warning(f"⚠️ Transcript exceeded 1000 messages, removing oldest entries")
+            # Keep only the most recent 800 messages to add some buffer
+            del transcript_messages[:200]
 
     @session.on("agent_speech_committed")
     def _on_agent_speech(ev):
         from datetime import datetime
-        transcript_messages.append({
+        message_data = {
             "role": "assistant",
             "content": ev.text,
             "timestamp": datetime.utcnow().isoformat(),
-        })
+        }
+        transcript_messages.append(message_data)
         
         # Log agent turn (INFO level for production visibility)
         logger.info(f"🤖 AGENT: {ev.text}")
+        
+        # Prevent unbounded memory growth - limit transcript size
+        if len(transcript_messages) > 1000:
+            logger.warning(f"⚠️ Transcript exceeded 1000 messages, removing oldest entries")
+            del transcript_messages[:200]
 
     usage_collector = metrics.UsageCollector()
 
@@ -182,29 +195,34 @@ async def agent_worker(ctx: JobContext):
         """Handle session cleanup and save transcript"""
         from datetime import datetime
         
-        # Calculate session duration
-        session_end_time = datetime.utcnow()
-        session_metadata["ended_at"] = session_end_time.isoformat()
-        duration = (session_end_time - session_start_time).total_seconds()
-        
-        # Log disconnection
-        logger.info(f"🔌 Session disconnected from room: {ctx.room.name}")
-        logger.info(f"⏱️  Session duration: {duration:.1f}s")
-        logger.info(f"💬 Total messages: {len(transcript_messages)}")
-        
-        # Log usage metrics
-        summary = usage_collector.get_summary()
-        logger.info(f"📈 Usage summary: {summary}")
-        
-        # TODO: Save to Supabase
-        # This is where you would call save_transcript_to_supabase()
-        # For now, just log the transcript data
-        if transcript_messages:
-            logger.info("Transcript ready for Supabase:")
-            logger.info(f"Session metadata: {session_metadata}")
-            logger.info(f"Total messages: {len(transcript_messages)}")
-            # Uncomment when Supabase integration is ready:
-            # await save_transcript_to_supabase(session_metadata, transcript_messages, summary)
+        try:
+            # Calculate session duration
+            session_end_time = datetime.utcnow()
+            session_metadata["ended_at"] = session_end_time.isoformat()
+            duration = (session_end_time - session_start_time).total_seconds()
+            
+            # Log disconnection
+            logger.info(f"🔌 Session disconnected from room: {ctx.room.name}")
+            logger.info(f"⏱️  Session duration: {duration:.1f}s")
+            logger.info(f"💬 Total messages: {len(transcript_messages)}")
+            
+            # Log usage metrics
+            summary = usage_collector.get_summary()
+            logger.info(f"📈 Usage summary: {summary}")
+            
+            # TODO: Save to Supabase
+            # This is where you would call save_transcript_to_supabase()
+            # For now, just log the transcript data
+            if transcript_messages:
+                logger.info("Transcript ready for Supabase:")
+                logger.info(f"Session metadata: {session_metadata}")
+                logger.info(f"Total messages: {len(transcript_messages)}")
+                # Uncomment when Supabase integration is ready:
+                # await save_transcript_to_supabase(session_metadata, transcript_messages, summary)
+        finally:
+            # Explicit cleanup to help garbage collection
+            transcript_messages.clear()
+            logger.debug("Transcript messages cleared from memory")
 
     ctx.add_shutdown_callback(cleanup_and_save_transcript)
 
@@ -290,25 +308,37 @@ async def console_entrypoint(ctx: JobContext):
         user_text = ev.alternatives[0].text if ev.alternatives else ""
         user_lang = getattr(ev, "language", "unknown")
         
-        transcript_messages.append({
+        message_data = {
             "role": "user",
             "content": user_text,
             "timestamp": datetime.utcnow().isoformat(),
             "language": user_lang,
-        })
+        }
+        transcript_messages.append(message_data)
         
         logger.info(f"👤 USER [{user_lang}]: {user_text}")
+        
+        # Prevent unbounded memory growth
+        if len(transcript_messages) > 1000:
+            logger.warning(f"⚠️ Transcript exceeded 1000 messages, removing oldest entries")
+            del transcript_messages[:200]
 
     @session.on("agent_speech_committed")
     def _on_agent_speech(ev):
         from datetime import datetime
-        transcript_messages.append({
+        message_data = {
             "role": "assistant",
             "content": ev.text,
             "timestamp": datetime.utcnow().isoformat(),
-        })
+        }
+        transcript_messages.append(message_data)
         
         logger.info(f"🤖 AGENT: {ev.text}")
+        
+        # Prevent unbounded memory growth
+        if len(transcript_messages) > 1000:
+            logger.warning(f"⚠️ Transcript exceeded 1000 messages, removing oldest entries")
+            del transcript_messages[:200]
 
     usage_collector = metrics.UsageCollector()
 
@@ -321,18 +351,23 @@ async def console_entrypoint(ctx: JobContext):
         """Console mode cleanup"""
         from datetime import datetime
         
-        # Calculate session duration
-        session_end_time = datetime.utcnow()
-        session_metadata["ended_at"] = session_end_time.isoformat()
-        duration = (session_end_time - session_start_time).total_seconds()
-        
-        # Log disconnection
-        logger.info(f"🔌 Console session disconnected")
-        logger.info(f"⏱️  Session duration: {duration:.1f}s")
-        logger.info(f"💬 Total messages: {len(transcript_messages)}")
-        
-        summary = usage_collector.get_summary()
-        logger.info(f"📈 Usage summary: {summary}")
+        try:
+            # Calculate session duration
+            session_end_time = datetime.utcnow()
+            session_metadata["ended_at"] = session_end_time.isoformat()
+            duration = (session_end_time - session_start_time).total_seconds()
+            
+            # Log disconnection
+            logger.info(f"🔌 Console session disconnected")
+            logger.info(f"⏱️  Session duration: {duration:.1f}s")
+            logger.info(f"💬 Total messages: {len(transcript_messages)}")
+            
+            summary = usage_collector.get_summary()
+            logger.info(f"📈 Usage summary: {summary}")
+        finally:
+            # Explicit cleanup to help garbage collection
+            transcript_messages.clear()
+            logger.debug("Console transcript messages cleared from memory")
 
     ctx.add_shutdown_callback(cleanup_console_session)
 
