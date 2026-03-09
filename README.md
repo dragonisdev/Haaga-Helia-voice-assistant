@@ -16,7 +16,7 @@ This voice assistant serves as an intelligent, conversational guide for Haaga-He
 The project consists of three main components:
 
 1. **Python Agent** (`livekit_agent_python/`) - The AI voice agent backend powered by LiveKit
-2. **Next.js Frontend** (`livekit-frontend/`) - Interactive web interface for voice conversations
+2. **Next.js Frontend** (`frontend/`) - Interactive web interface for voice conversations
 3. **Supabase Database** (`supabase/`) - Stores conversation transcripts and analytics
 
 ## 🛠️ Technology Stack
@@ -71,7 +71,7 @@ python src/agent.py dev
 ### 3. Setup Frontend
 
 ```bash
-cd livekit-frontend
+cd frontend
 
 # Install dependencies
 pnpm install
@@ -115,7 +115,7 @@ cd supabase
 │   │   └── agent.py          # Main agent logic
 │   ├── Dockerfile            # Docker configuration
 │   └── pyproject.toml        # Python dependencies
-├── livekit-frontend/         # Next.js web interface
+├── frontend/         # Next.js web interface
 │   ├── app/                  # Next.js app router
 │   ├── components/           # React components
 │   └── hooks/                # Custom React hooks
@@ -145,7 +145,7 @@ Refer to the respective documentation files in `livekit_agent_python/` for setup
 - `SUPABASE_URL` - Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
 
-**Frontend (`livekit-frontend/.env.local`)**:
+**Frontend (`frontend/.env.local`)**:
 - `LIVEKIT_API_KEY` - LiveKit API key
 - `LIVEKIT_API_SECRET` - LiveKit API secret
 - `LIVEKIT_URL` - LiveKit server URL
