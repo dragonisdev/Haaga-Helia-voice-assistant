@@ -71,23 +71,17 @@ async def save_transcript_to_supabase(
 
         session_id = resp.json()[0]["id"]
 
-        # 2. Insert messages from session.history
-        messages = []
-        for item in history_items:
-            if not (hasattr(item, "type") and item.type == "message"):
-                continue
-            content = ""
-            if hasattr(item, "text_content") and item.text_content:
-                content = item.text_content
-            elif hasattr(item, "content"):
-                content = str(item.content) if not isinstance(item.content, str) else item.content
-            ts = datetime.fromtimestamp(item.created_at).isoformat() if hasattr(item, "created_at") else datetime.utcnow().isoformat()
-            messages.append({
+        # 2. Insert messages collected during the session
+        messages = [
+            {
                 "session_id": session_id,
-                "role": item.role,
-                "content": content,
-                "timestamp": ts,
-            })
+                "role": item["role"],
+                "content": item["content"],
+                "timestamp": item["timestamp"],
+            }
+            for item in history_items
+            if item.get("content")
+        ]
 
         if messages:
             resp = await client.post(f"{rest}/conversation_messages", json=messages, headers=headers)
@@ -196,6 +190,8 @@ async def entrypoint(ctx: JobContext):
     started_at = datetime.utcnow()
     session_ended = asyncio.Event()
 
+    transcript: list[dict] = []
+
     agent_session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),
         stt=gladia.STT(),
@@ -208,16 +204,19 @@ async def entrypoint(ctx: JobContext):
     def _on_false_interruption(ev: AgentFalseInterruptionEvent):
         agent_session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
-    # Log turns without accumulating a list (avoids memory leak)
     @agent_session.on("user_speech_committed")
     def _on_user_speech(ev):
         text = ev.alternatives[0].text if ev.alternatives else ""
         lang = getattr(ev, "language", "unknown")
         logger.info(f"USER [{lang}]: {text}")
+        if text:
+            transcript.append({"role": "user", "content": text, "timestamp": datetime.utcnow().isoformat()})
 
     @agent_session.on("agent_speech_committed")
     def _on_agent_speech(ev):
         logger.info(f"AGENT: {ev.text}")
+        if ev.text:
+            transcript.append({"role": "assistant", "content": ev.text, "timestamp": datetime.utcnow().isoformat()})
 
     usage_collector = metrics.UsageCollector()
 
@@ -240,14 +239,12 @@ async def entrypoint(ctx: JobContext):
         logger.info(f"Session ended | room={ctx.room.name} duration={duration:.1f}s")
         logger.info(f"Usage: {summary}")
 
-        # Grab transcript from session.history (no memory leak — single copy at close)
-        history_items = list(agent_session.history.items) if hasattr(agent_session, "history") and hasattr(agent_session.history, "items") else []
         try:
-            await save_transcript_to_supabase(ctx.room.name, started_at, ended_at, history_items, summary)
+            await save_transcript_to_supabase(ctx.room.name, started_at, ended_at, transcript, summary)
         except Exception:
             logger.exception("Failed to save transcript to Supabase")
         finally:
-            history_items.clear()
+            transcript.clear()
 
     ctx.add_shutdown_callback(on_shutdown)
 
