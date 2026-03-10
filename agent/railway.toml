@@ -1,7 +1,6 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-watchPaths = ["agent/agent.py", "agent/requirements.txt", "agent/Dockerfile"]
 
 [deploy]
 restartPolicyType = "ON_FAILURE"
