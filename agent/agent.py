@@ -217,17 +217,45 @@ async def entrypoint(ctx: JobContext):
 
     @agent_session.on("user_speech_committed")
     def _on_user_speech(ev):
-        text = ev.alternatives[0].text if ev.alternatives else ""
+        try:
+            if isinstance(ev, str):
+                text = ev
+            elif hasattr(ev, "alternatives") and ev.alternatives:
+                text = ev.alternatives[0].text
+            elif hasattr(ev, "text"):
+                text = ev.text or ""
+            elif hasattr(ev, "message") and ev.message:
+                text = getattr(ev.message, "text_content", None) or ""
+            else:
+                text = ""
+        except Exception:
+            logger.exception("user_speech_committed text extraction failed")
+            text = ""
         lang = getattr(ev, "language", "unknown")
-        logger.info(f"USER [{lang}]: {text}")
+        logger.info(f"USER [{lang}]: {text!r}")
         if text:
             transcript.append({"role": "user", "content": text, "timestamp": datetime.utcnow().isoformat()})
 
     @agent_session.on("agent_speech_committed")
     def _on_agent_speech(ev):
-        logger.info(f"AGENT: {ev.text}")
-        if ev.text:
-            transcript.append({"role": "assistant", "content": ev.text, "timestamp": datetime.utcnow().isoformat()})
+        try:
+            if isinstance(ev, str):
+                text = ev
+            elif hasattr(ev, "text_content"):
+                # ChatMessage passed directly
+                text = ev.text_content or ""
+            elif hasattr(ev, "message") and ev.message:
+                text = getattr(ev.message, "text_content", None) or ""
+            elif hasattr(ev, "text"):
+                text = ev.text or ""
+            else:
+                text = ""
+        except Exception:
+            logger.exception("agent_speech_committed text extraction failed")
+            text = ""
+        logger.info(f"AGENT: {text!r}")
+        if text:
+            transcript.append({"role": "assistant", "content": text, "timestamp": datetime.utcnow().isoformat()})
 
     usage_collector = metrics.UsageCollector()
 
@@ -251,6 +279,19 @@ async def entrypoint(ctx: JobContext):
         logger.info(f"Usage: {summary}")
 
         try:
+            # If event-based accumulation captured nothing, fall back to history
+            if not transcript and hasattr(agent_session, "history") and hasattr(agent_session.history, "items"):
+                for item in agent_session.history.items:
+                    if not (hasattr(item, "type") and item.type == "message"):
+                        continue
+                    content = getattr(item, "text_content", None) or ""
+                    if not content and hasattr(item, "content"):
+                        content = item.content if isinstance(item.content, str) else str(item.content)
+                    ts = datetime.fromtimestamp(item.created_at).isoformat() if hasattr(item, "created_at") else datetime.utcnow().isoformat()
+                    if content:
+                        transcript.append({"role": item.role, "content": content, "timestamp": ts})
+                if transcript:
+                    logger.info(f"Used history fallback: {len(transcript)} turns")
             await save_transcript_to_supabase(ctx.room.name, started_at, ended_at, transcript, summary)
         except Exception:
             logger.exception("Failed to save transcript to Supabase")
