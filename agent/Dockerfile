@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 COPY requirements.txt .
-RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
 COPY agent.py .
