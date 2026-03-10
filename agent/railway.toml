@@ -1,7 +1,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-watchPaths = ["agent.py", "requirements.txt", "Dockerfile"]
+watchPaths = ["agent.py", "download_models.py", "requirements.txt", "Dockerfile"]
 
 [deploy]
 restartPolicyType = "ON_FAILURE"

@@ -6,7 +6,6 @@ from datetime import datetime
 
 import httpx
 from dotenv import load_dotenv
-from livekit import rtc
 from livekit.agents import (
     NOT_GIVEN,
     Agent,
@@ -14,15 +13,12 @@ from livekit.agents import (
     AgentServer,
     AgentSession,
     JobContext,
-    JobProcess,
     MetricsCollectedEvent,
     cli,
     metrics,
-    room_io,
 )
 from livekit.agents.llm import function_tool
-from livekit.plugins import gladia, noise_cancellation, openai, silero
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from livekit.plugins import gladia, openai, silero
 
 load_dotenv(".env.local")
 
@@ -194,13 +190,6 @@ You have access to a web_search tool to look up current information when needed.
 server = AgentServer()
 
 
-def prewarm(proc: JobProcess):
-    proc.userdata["vad"] = silero.VAD.load()
-
-
-server.setup_fnc = prewarm
-
-
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
@@ -211,8 +200,7 @@ async def entrypoint(ctx: JobContext):
         llm=openai.LLM(model="gpt-4o-mini"),
         stt=gladia.STT(),
         tts=openai.TTS(voice="alloy", model="tts-1"),
-        turn_detection=MultilingualModel(),
-        vad=ctx.proc.userdata["vad"],
+        vad=silero.VAD.load(),
         preemptive_generation=True,
     )
 
@@ -275,13 +263,6 @@ async def entrypoint(ctx: JobContext):
     await agent_session.start(
         agent=Assistant(),
         room=ctx.room,
-        room_options=room_io.RoomOptions(
-            audio_input=room_io.AudioInputOptions(
-                noise_cancellation=lambda params: noise_cancellation.BVCTelephony()
-                if params.participant.kind == rtc.ParticipantKind.PARTICIPANT_KIND_SIP
-                else noise_cancellation.BVC(),
-            ),
-        ),
     )
 
     await ctx.connect()
