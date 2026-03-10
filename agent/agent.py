@@ -22,6 +22,8 @@ from livekit.plugins import gladia, openai, silero
 
 load_dotenv(".env.local")
 
+# lol
+
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger("agent")
 
