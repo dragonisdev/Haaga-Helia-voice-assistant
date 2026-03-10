@@ -140,7 +140,10 @@ export async function POST(req: Request) {
     // Check environment variables
     if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
       console.error('Missing required environment variables');
-      return new NextResponse('Service temporarily unavailable', { status: 503 });
+      return NextResponse.json(
+        { error: 'Service unavailable', message: 'Server is not configured correctly.' },
+        { status: 503 }
+      );
     }
 
     // Get client IP for rate limiting

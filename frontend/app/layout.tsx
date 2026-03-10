@@ -70,7 +70,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           enableSystem
           disableTransitionOnChange
         >
-          <header className="fixed top-0 left-0 z-50 hidden w-full flex-row justify-between p-6 md:flex">
+          <header className="fixed top-0 left-0 z-50 flex w-full flex-row items-center justify-between px-4 py-3 md:p-6">
             <a
               target="_blank"
               rel="noopener noreferrer"
@@ -81,13 +81,13 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <img
                 src={logo}
                 alt={`${companyName} Logo`}
-                className="block h-8 w-auto object-contain dark:hidden"
+                className="block h-6 w-auto object-contain dark:hidden md:h-8"
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={logoDark ?? logo}
                 alt={`${companyName} Logo`}
-                className="hidden h-8 w-auto object-contain dark:block"
+                className="hidden h-6 w-auto object-contain dark:block md:h-8"
               />
             </a>
             <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
@@ -97,7 +97,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 href="https://github.com/dragonisdev/Haaga-Helia-voice-assistant"
                 className="underline underline-offset-4"
               >
-                Project Repository
+                <span className="hidden sm:inline">Project Repository</span>
+                <span className="sm:hidden">GitHub</span>
               </a>
             </span>
           </header>
