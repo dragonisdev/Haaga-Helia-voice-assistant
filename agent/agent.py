@@ -206,15 +206,24 @@ async def entrypoint(ctx: JobContext):
         stt=gladia.STT(),
         tts=openai.TTS(voice="alloy", model="tts-1"),
         vad=silero.VAD.load(
-            min_silence_duration=0.4,
-            prefix_padding_duration=0.1,
-            activation_threshold=0.5,
+            min_silence_duration=0.6,
+            prefix_padding_duration=0.3,
+            activation_threshold=0.6,
         ),
-        preemptive_generation=True,
+        min_endpointing_delay=0.5,
+        preemptive_generation=False,
     )
+
+    _last_false_int_time = 0.0
 
     @agent_session.on("agent_false_interruption")
     def _on_false_interruption(ev: AgentFalseInterruptionEvent):
+        nonlocal _last_false_int_time
+        import time
+        now = time.monotonic()
+        if now - _last_false_int_time < 1.5:
+            return  # debounce rapid false interruptions
+        _last_false_int_time = now
         agent_session.generate_reply(instructions=ev.extra_instructions or NOT_GIVEN)
 
     @agent_session.on("user_speech_committed")
