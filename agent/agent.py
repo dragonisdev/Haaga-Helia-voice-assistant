@@ -206,11 +206,11 @@ async def entrypoint(ctx: JobContext):
         stt=gladia.STT(),
         tts=openai.TTS(voice="alloy", model="tts-1"),
         vad=silero.VAD.load(
-            min_silence_duration=0.6,
-            prefix_padding_duration=0.3,
+            min_silence_duration=0.5,
+            prefix_padding_duration=0.2,
             activation_threshold=0.6,
         ),
-        min_endpointing_delay=0.5,
+        min_endpointing_delay=0.3,
         preemptive_generation=False,
     )
 
