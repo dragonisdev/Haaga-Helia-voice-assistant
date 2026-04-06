@@ -29,8 +29,71 @@ logger = logging.getLogger("agent")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 EXA_API_KEY = os.getenv("EXA_API_KEY", "")
 SESSION_TIMEOUT = int(os.getenv("SESSION_TIMEOUT_SECONDS", "1800"))
+
+
+# ---------------------------------------------------------------------------
+# RAG: embed user query and search Supabase documents
+# ---------------------------------------------------------------------------
+
+async def embed_text(text: str) -> list[float] | None:
+    """Convert text to a 1536-dim vector using OpenAI embeddings."""
+    if not OPENAI_API_KEY:
+        logger.warning("OPENAI_API_KEY not set — skipping embedding")
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/embeddings",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "text-embedding-ada-002",
+                    "input": text,
+                },
+            )
+        if resp.status_code != 200:
+            logger.error(f"Embedding API error: {resp.status_code} {resp.text}")
+            return None
+        return resp.json()["data"][0]["embedding"]
+    except Exception:
+        logger.exception("embed_text failed")
+        return None
+
+
+async def search_documents(query: str, match_threshold: float = 0.7, match_count: int = 3) -> list[dict]:
+    """Embed the query and call match_documents RPC in Supabase."""
+    embedding = await embed_text(query)
+    if embedding is None:
+        return []
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        return []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{SUPABASE_URL.rstrip('/')}/rest/v1/rpc/match_documents",
+                headers={
+                    "apikey": SUPABASE_SERVICE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "query_embedding": embedding,
+                    "match_threshold": match_threshold,
+                    "match_count": match_count,
+                },
+            )
+        if resp.status_code != 200:
+            logger.error(f"match_documents RPC error: {resp.status_code} {resp.text}")
+            return []
+        return resp.json()
+    except Exception:
+        logger.exception("search_documents failed")
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -131,9 +194,10 @@ You are speaking to the user via voice. The user also sees a live chat transcrip
 
 # Tools
 
-You have a web_search tool for current information.
+You have a rag_search tool for Haaga-Helia specific knowledge and a web_search tool for current information.
 
-- Use web_search for questions about Haaga-Helia programs, admissions, courses, deadlines, campus events, staff, thesis guidelines, Kela student benefits, general housing allowance, Finnish student loans, or any topic where up-to-date information matters.
+- Use rag_search first for questions about Haaga-Helia programs, policies, thesis guidelines, campus services, and other university-specific topics. This searches our internal knowledge base.
+- Use web_search when rag_search returns no results, or for questions about external topics like Kela benefits, housing, current events, or deadlines that may change frequently.
 - After a search, summarize the answer and always mention the source. If you have a link, include it so the user can see it in the transcript.
 - For general knowledge questions, use your training data before searching.
 - If a search fails, say so once and suggest an alternative.
@@ -145,6 +209,17 @@ You have a web_search tool for current information.
 - For medical, legal, or financial advice beyond general information, suggest contacting a qualified professional.
 - Protect student privacy and avoid collecting sensitive data.""",
         )
+
+    @function_tool()
+    async def rag_search(self, query: str) -> str:
+        """Search the Haaga-Helia knowledge base for information about programs, policies, thesis guidelines, campus services, and other university-specific topics."""
+        results = await search_documents(query, match_threshold=0.7, match_count=3)
+        if not results:
+            return "No matching documents found in the knowledge base."
+        parts = []
+        for r in results:
+            parts.append(f"[similarity: {r['similarity']:.2f}] {r['content']}")
+        return "\n\n".join(parts)
 
     @function_tool()
     async def web_search(self, query: str) -> str:
