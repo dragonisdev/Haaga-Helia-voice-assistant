@@ -1,4 +1,4 @@
-import { Public_Sans } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { ThemeProvider } from '@/components/app/theme-provider';
@@ -6,9 +6,11 @@ import { cn } from '@/lib/shadcn/utils';
 import { getAppConfig, getStyles } from '@/lib/utils';
 import '@/styles/globals.css';
 
-const publicSans = Public_Sans({
-  variable: '--font-public-sans',
+const roboto = Roboto({
+  weight: ['400', '500', '700'],
   subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-roboto',
 });
 
 const commitMono = localFont({
@@ -52,11 +54,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        publicSans.variable,
-        commitMono.variable,
-        'scroll-smooth font-sans antialiased'
-      )}
+      className={cn(roboto.variable, commitMono.variable, 'scroll-smooth font-sans antialiased')}
     >
       <head>
         {styles && <style>{styles}</style>}
@@ -90,7 +88,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 className="hidden h-6 w-auto object-contain dark:block md:h-8"
               />
             </a>
-            <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
+            <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               <a
                 target="_blank"
                 rel="noopener noreferrer"

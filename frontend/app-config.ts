@@ -32,9 +32,9 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/haagahelia_logo_1.png',
-  accent: '#002cf2',
+  accent: '#0079c2',
   logoDark: '/haagahelia_logo_1.png',
-  accentDark: '#1fd5f9',
+  accentDark: '#8baddc',
   startButtonText: 'Start call',
 
   // agent dispatch configuration

@@ -137,7 +137,7 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
                       className={cn([
                         'bg-muted min-h-2.5 w-2.5 rounded-full',
                         'origin-center transition-colors duration-250 ease-linear',
-                        'data-[lk-highlighted=true]:bg-foreground data-[lk-muted=true]:bg-muted',
+                        'data-[lk-highlighted=true]:bg-primary data-[lk-muted=true]:bg-muted',
                       ])}
                     />
                   </AgentAudioVisualizerBar>
