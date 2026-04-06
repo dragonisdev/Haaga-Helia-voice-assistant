@@ -213,9 +213,12 @@ You have a rag_search tool for Haaga-Helia specific knowledge and a web_search t
     @function_tool()
     async def rag_search(self, query: str) -> str:
         """Search the Haaga-Helia knowledge base for information about programs, policies, thesis guidelines, campus services, and other university-specific topics."""
+        logger.info(f"RAG search query: {query!r}")
         results = await search_documents(query, match_threshold=0.7, match_count=3)
         if not results:
+            logger.info("RAG search: no results found")
             return "No matching documents found in the knowledge base."
+        logger.info(f"RAG search: {len(results)} result(s), top similarity={results[0]['similarity']:.2f}")
         parts = []
         for r in results:
             parts.append(f"[similarity: {r['similarity']:.2f}] {r['content']}")
