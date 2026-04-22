@@ -286,7 +286,7 @@ async def entrypoint(ctx: JobContext):
         vad=silero.VAD.load(
             min_silence_duration=0.5,
             prefix_padding_duration=0.2,
-            activation_threshold=0.6,
+            activation_threshold=0.85,
         ),
         min_endpointing_delay=0.3,
         preemptive_generation=False,
