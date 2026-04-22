@@ -16,12 +16,14 @@ Browser (Next.js frontend)
         │  Worker job dispatch
         ▼
  Python Agent (Railway)
-   ├── Gladia STT  ── multilingual speech recognition
-   ├── gpt-4o-mini ── language model
-   ├── OpenAI TTS  ── text-to-speech (alloy voice)
-   ├── Silero VAD  ── voice activity detection (prewarmed)
-   ├── Exa REST API── real-time web search
-   └── Supabase REST── transcript + usage persistence
+   ├── Gladia STT      ── multilingual speech recognition
+   ├── gpt-4o-mini     ── language model
+   ├── OpenAI TTS      ── text-to-speech (alloy voice)
+   ├── Silero VAD      ── voice activity detection (threshold 0.85)
+   ├── OpenAI Embeddings── 1536-dim vectors for RAG
+   ├── Supabase REST   ── match_documents RPC (vector search)
+   ├── Exa REST API    ── real-time web search
+   └── Supabase REST   ── transcript + usage persistence
 ```
 
 ---
@@ -38,6 +40,8 @@ Browser (Next.js frontend)
 
 `old_agent/` is a legacy reference implementation that is not deployed anywhere. Ignore it.
 
+`_patch_agent.py` is a one-off utility script used to apply bulk patches or migrations to the agent code during development. It is not part of the deployed application.
+
 ---
 
 ## The agent (agent/agent.py)
@@ -51,17 +55,28 @@ The `entrypoint` function runs for each incoming session. It creates an `AgentSe
 - Gladia for speech-to-text (multilingual, picks up the student's language automatically)
 - gpt-4o-mini as the language model
 - OpenAI TTS with the "alloy" voice for text-to-speech
-- Silero VAD for voice activity detection (knows when the student is speaking vs silent)
+- Silero VAD for voice activity detection with `activation_threshold=0.85` (knows when the student is speaking vs silent; higher threshold reduces false triggers from background noise)
 
 The agent then greets the student with: "Hi, I'm Haaga-Helia Help, a student assistant AI. Feel free to ask anything."
 
 ### The Assistant class
 
-This is the main AI persona. It carries the full system prompt that tells the model to respond in plain spoken language (no markdown, no lists), keep replies short, match the student's language, and stay within school/student topics. It also defines the `web_search` tool.
+This is the main AI persona. It carries the full system prompt that tells the model to respond in plain spoken language (no markdown, no lists), keep replies short, match the student's language, and stay within school/student topics. It defines two tools: `rag_search` and `web_search`.
+
+The system prompt instructs the model to always try `rag_search` first for Haaga-Helia-specific questions (programs, policies, thesis guidelines, campus services) and only fall back to `web_search` for external or time-sensitive topics.
+
+### The rag_search tool
+
+Searches the internal Haaga-Helia knowledge base stored in Supabase. When called, it:
+1. Sends the query text to the OpenAI Embeddings API (`text-embedding-ada-002`) to produce a 1536-dimension vector.
+2. Calls the `match_documents` Postgres RPC in Supabase with the vector, a similarity threshold of `0.7`, and a max of 3 results.
+3. Returns the matching document chunks with their similarity scores to the LLM.
+
+If `OPENAI_API_KEY` or the Supabase credentials are not set, the function returns an empty result without crashing. The knowledge base is populated separately using `agent/upload_documents.py`.
 
 ### The web_search tool
 
-When the assistant thinks it needs current information, it calls this tool with a search query. The tool sends a POST request to the Exa API and returns the top 3 results with short snippets. The assistant then summarizes the findings and tells the student the source URL. The URL also appears in the chat transcript on screen.
+When the assistant needs current information not available in the knowledge base, it calls this tool with a search query. The tool sends a POST request to the Exa API and returns the top 3 results with short snippets. The assistant then summarizes the findings and tells the student the source URL. The URL also appears in the chat transcript on screen.
 
 ### Transcript collection
 
@@ -74,11 +89,14 @@ Both append a dict with `role`, `content`, and `timestamp` to an in-memory `tran
 ### Session shutdown and Supabase save
 
 When the student disconnects, the `on_shutdown` callback runs. It:
-1. Collects the full transcript list
-2. Gets the usage summary from the metrics collector (token counts, TTS character count)
-3. Calls `save_transcript_to_supabase` which makes three sequential POST requests to the Supabase REST API: one to create a `conversation_sessions` row, one to create a `conversation_messages` row with the full transcript, and one to create a `session_usage_metrics` row.
+1. Collects the full transcript list built by the event listeners.
+2. If the event-based transcript is empty (e.g., events did not fire), falls back to reading `agent_session.history.items` directly to reconstruct the conversation turns.
+3. Gets the usage summary from the metrics collector (token counts, TTS character count).
+4. Calls `save_transcript_to_supabase` which makes three sequential POST requests to the Supabase REST API: one to create a `conversation_sessions` row, one to create a `conversation_messages` row with the full transcript, and one to create a `session_usage_metrics` row.
 
 There is no Supabase SDK used — everything is plain HTTP via `httpx`.
+
+The callback is idempotent: a `_shutdown_done` flag prevents it from running twice if both the timeout guard and a normal disconnect fire close together.
 
 ### Session timeout
 
@@ -192,9 +210,9 @@ Stores the full transcript of a session as a single row. Fields: `id`, `session_
 
 Stores token and TTS usage per session. Fields: `id`, `session_id` (FK), `llm_prompt_tokens`, `llm_completion_tokens`, `tts_characters_count`.
 
-### documents table (for RAG)
+### documents (RAG knowledge base)
 
-A `documents` table with `pgvector` support exists for potential retrieval-augmented generation. It stores text chunks with 1536-dimension embeddings and a `source` field. There is a `match_documents` SQL function for cosine similarity search. The `upload_documents.py` script in the agent folder is used to populate this table. This feature is set up but not wired into the agent's main flow yet.
+A `documents` table with `pgvector` support stores the Haaga-Helia knowledge base used by the `rag_search` tool. Each row is a text chunk with a 1536-dimension embedding vector and a `source` field (URL or document name). A `match_documents` SQL function performs cosine similarity search against a query embedding. The `upload_documents.py` script in the agent folder is used to chunk and upload documents to this table.
 
 ---
 
