@@ -178,7 +178,30 @@ Additional documentation available in the project:
 - [Security Fixes](SECURITY_FIXES.md)
 - [Supabase Transcript Integration](livekit_agent_python/SUPABASE_TRANSCRIPT_INTEGRATION.md)
 
-## 🔒 Security
+## � Admin Dashboard
+
+The project includes a protected admin dashboard at `/admin` where authorised staff can review call session transcripts, call durations, and token usage.
+
+**Access flow:**
+1. Visit `/admin/login` and create an account with your email
+2. Confirm your email via the link sent by Supabase
+3. An administrator grants you access by running one SQL line in the Supabase dashboard (see below)
+4. Sign in — you can now view all session data
+
+Without the admin role you will see an "Access denied" page even after signing in.
+
+**Granting admin access** (run in the Supabase SQL editor):
+```sql
+UPDATE auth.users
+SET raw_app_meta_data = raw_app_meta_data || '{"role": "admin"}'::jsonb
+WHERE email = 'admin@example.com';
+```
+
+A ready-to-edit version of this script lives at [`supabase/scripts/grant_admin.sql`](supabase/scripts/grant_admin.sql).
+
+For full technical details — auth architecture, RLS policies, local testing, deployment configuration — see [`docs/admin.md`](docs/admin.md).
+
+## �🔒 Security
 
 See [SECURITY_FIXES.md](SECURITY_FIXES.md) for important security considerations and implemented fixes.
 

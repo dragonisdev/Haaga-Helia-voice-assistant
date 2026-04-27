@@ -1,9 +1,9 @@
 # Multi-stage build for better caching
-FROM python:3.13-slim as builder
+FROM python:3.13-slim AS builder
 
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -17,15 +17,18 @@ FROM python:3.13-slim
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/root/.local/bin:$PATH"
 
-RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-# Copy installed packages from builder stage
+# Copy installed packages from builder stage (no gcc needed at runtime)
 COPY --from=builder /root/.local /root/.local
 
-COPY agent.py .
+# Pre-download ML models using a minimal stub that does NOT change with agent code.
+# This layer is cached independently of agent.py, so model re-downloads are
+# skipped on every normal code push.
+COPY download_models.py .
+RUN python download_models.py download-files
 
-RUN python agent.py download-files
+# Copy application code last so the layers above stay cached between pushes.
+COPY agent.py .
 
 CMD ["python", "agent.py", "start"]

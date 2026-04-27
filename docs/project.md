@@ -40,8 +40,6 @@ Browser (Next.js frontend)
 
 `old_agent/` is a legacy reference implementation that is not deployed anywhere. Ignore it.
 
-`_patch_agent.py` is a one-off utility script used to apply bulk patches or migrations to the agent code during development. It is not part of the deployed application.
-
 ---
 
 ## The agent (agent/agent.py)
@@ -213,6 +211,61 @@ Stores token and TTS usage per session. Fields: `id`, `session_id` (FK), `llm_pr
 ### documents (RAG knowledge base)
 
 A `documents` table with `pgvector` support stores the Haaga-Helia knowledge base used by the `rag_search` tool. Each row is a text chunk with a 1536-dimension embedding vector and a `source` field (URL or document name). A `match_documents` SQL function performs cosine similarity search against a query embedding. The `upload_documents.py` script in the agent folder is used to chunk and upload documents to this table.
+
+---
+
+## Admin dashboard
+
+The admin dashboard is a protected section of the Next.js frontend, accessible at `/admin`. It lets authorised staff review all recorded call sessions: transcripts, call durations, start/end times, and LLM/TTS token usage. For a focused reference, see [`docs/admin.md`](admin.md).
+
+### Authentication model
+
+Authentication is handled by Supabase Auth (email + password). Authorisation uses the `app_metadata.role` claim inside the Supabase JWT:
+
+- `app_metadata` can only be written by the service role — users cannot modify it themselves.
+- The claim is embedded in the JWT so role checks are done without an extra database query.
+- Only users explicitly granted `role: admin` via SQL can access dashboard data.
+
+Users who have signed in but do not hold the admin role are shown an "Access denied" page; they cannot reach any data.
+
+### Row-level security
+
+All four data tables have RLS enabled. A `SELECT` policy on each table uses the helper function `public.is_admin()` which reads the JWT claim. The Python agent uses the service role key, which bypasses RLS entirely — so agent writes are unaffected.
+
+The `session_summaries` view inherits the RLS of its underlying tables. The migration additionally grants `SELECT` on the view to the `authenticated` role so the view is reachable through the Supabase client.
+
+Migration file: `supabase/migrations/20260427000000_admin_rls_policies.sql`.
+
+### New environment variables (frontend)
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL (`https://<ref>.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `NEXT_PUBLIC_SITE_URL` | Canonical URL of the deployed site, used to build the email-confirmation redirect link |
+
+### New API route
+
+`GET /api/auth/callback` — handles the Supabase email-confirmation redirect. Exchanges the one-time `code` query parameter for a session cookie. Validates the `next` redirect parameter against open-redirect attacks (only relative paths are allowed).
+
+### New frontend files
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/server.ts` | Server-side Supabase client using Next.js `cookies()` |
+| `lib/supabase/client.ts` | Browser Supabase client singleton |
+| `middleware.ts` | Intercepts all `/admin/*` requests, refreshes the session cookie, and redirects unauthenticated users to `/admin/login` |
+| `app/api/auth/callback/route.ts` | Email-confirmation callback handler |
+| `app/admin/login/page.tsx` | Sign-in / sign-up form with tab switcher |
+| `app/admin/login/actions.ts` | Rate-limited server actions for sign-in and sign-up |
+| `app/admin/layout.tsx` | Admin shell — nav bar, sign-out button, role gate |
+| `app/admin/actions.ts` | Sign-out server action |
+| `app/admin/page.tsx` | Sessions list (paginated, searchable by room name) |
+| `app/admin/sessions/[id]/page.tsx` | Session detail — metadata card, colour-coded transcript, usage stats |
+
+### Rate limiting on auth actions
+
+Sign-in and sign-up server actions apply IP-based in-memory rate limiting (the same pattern as `/api/connection-details`): 10 sign-in attempts per minute, 3 sign-up attempts per minute, with a 5-minute lockout on breach. Sign-in errors use a generic message that does not reveal whether the email exists.
 
 ---
 
