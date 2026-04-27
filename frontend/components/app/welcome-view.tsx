@@ -33,15 +33,15 @@ export const WelcomeView = ({
   };
 
   return (
-    <div ref={ref} className="h-full flex flex-col items-center justify-center p-4">
-      <section className="bg-card/90 supports-[backdrop-filter]:bg-card/80 supports-[backdrop-filter]:backdrop-blur-sm border-primary/15 flex max-w-2xl flex-col items-center justify-center rounded-3xl border px-4 py-8 text-center shadow-sm md:px-8 md:py-12">
+    <div ref={ref} className="flex h-full flex-col items-center justify-center p-4">
+      <section className="bg-card/90 supports-[backdrop-filter]:bg-card/80 border-primary/15 flex max-w-2xl flex-col items-center justify-center rounded-3xl border px-4 py-8 text-center shadow-sm supports-[backdrop-filter]:backdrop-blur-sm md:px-8 md:py-12">
         <WelcomeImage />
 
         <h1 className="text-foreground my-2 text-2xl font-bold tracking-tight md:my-4 md:text-3xl">
           Chat with Haaga-Helia Support Assistant
         </h1>
 
-        <p className="text-muted-foreground max-w-prose text-sm md:text-base leading-relaxed font-normal mb-8 px-2 md:px-0">
+        <p className="text-muted-foreground mb-8 max-w-prose px-2 text-sm leading-relaxed font-normal md:px-0 md:text-base">
           Have questions related to your studies, thesis or even for what is for lunch today? Ask
           our AI in your own native language!
         </p>
@@ -49,16 +49,16 @@ export const WelcomeView = ({
         <Button
           size="lg"
           onClick={handleStartCall}
-          className="w-full max-w-[280px] sm:w-72 rounded-full font-semibold md:text-base tracking-wide hover:cursor-pointer shadow-sm md:shadow transition-all hover:scale-105 active:scale-95"
+          className="w-full max-w-[280px] rounded-full font-semibold tracking-wide shadow-sm transition-all hover:scale-105 hover:cursor-pointer active:scale-95 sm:w-72 md:text-base md:shadow"
         >
           {startButtonText}
         </Button>
       </section>
 
       <div className="fixed bottom-6 left-0 flex w-full items-center justify-center px-4">
-        <p className="text-muted-foreground text-xs leading-5 font-normal md:text-sm text-center">
+        <p className="text-muted-foreground text-center text-xs leading-5 font-normal md:text-sm">
           See how we process your data:{' '}
-          <a href="/privacy" className="underline hover:text-foreground transition-colors">
+          <a href="/privacy" className="hover:text-foreground underline transition-colors">
             Privacy Policy
           </a>
           .

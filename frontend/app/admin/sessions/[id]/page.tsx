@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
+import { createClient } from '@/lib/supabase/server';
 
 interface Turn {
   role: 'user' | 'assistant';
@@ -17,11 +17,7 @@ function formatDuration(seconds: number | null): string {
   return `${m}m ${s}s`;
 }
 
-export default async function SessionDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   // Basic UUID format validation to prevent injection
@@ -72,7 +68,10 @@ export default async function SessionDetailPage({
       <div className="border-border bg-card rounded-lg border p-5">
         <h1 className="text-foreground mb-4 text-xl font-semibold">Session Details</h1>
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-          <Stat label="Started" value={format(new Date(session.started_at), 'MMM d, yyyy HH:mm:ss')} />
+          <Stat
+            label="Started"
+            value={format(new Date(session.started_at), 'MMM d, yyyy HH:mm:ss')}
+          />
           <Stat
             label="Ended"
             value={
@@ -107,13 +106,13 @@ export default async function SessionDetailPage({
           )}
         </div>
         <div className="border-border mt-4 border-t pt-4">
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Room ID
           </p>
           <p className="text-foreground mt-0.5 font-mono text-sm break-all">{session.room_name}</p>
         </div>
         <div className="mt-3">
-          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Session ID
           </p>
           <p className="text-foreground mt-0.5 font-mono text-sm break-all">{session.id}</p>
@@ -134,7 +133,10 @@ export default async function SessionDetailPage({
         ) : (
           <div className="divide-border divide-y">
             {turns.map((turn, i) => (
-              <div key={i} className={`flex gap-3 px-5 py-4 ${turn.role === 'assistant' ? 'bg-muted/20' : ''}`}>
+              <div
+                key={i}
+                className={`flex gap-3 px-5 py-4 ${turn.role === 'assistant' ? 'bg-muted/20' : ''}`}
+              >
                 {/* Role badge */}
                 <div className="mt-0.5 shrink-0">
                   <span
@@ -149,7 +151,7 @@ export default async function SessionDetailPage({
                 </div>
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap break-words">
+                  <p className="text-foreground text-sm leading-relaxed break-words whitespace-pre-wrap">
                     {turn.content}
                   </p>
                   {turn.timestamp && (
@@ -170,7 +172,7 @@ export default async function SessionDetailPage({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</p>
+      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</p>
       <p className="text-foreground mt-0.5 text-sm font-medium">{value}</p>
     </div>
   );

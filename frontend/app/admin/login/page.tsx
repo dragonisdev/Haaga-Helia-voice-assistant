@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
-import { signIn, signUp, type AuthActionResult } from './actions';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { type AuthActionResult, signIn, signUp } from './actions';
 
 const initialState: AuthActionResult | null = null;
 
@@ -139,7 +139,11 @@ export default function AdminLoginPage({
         </div>
 
         {/* Form — remount on tab switch to reset state */}
-        {tab === 'signin' ? <AuthForm key="signin" mode="signin" /> : <AuthForm key="signup" mode="signup" />}
+        {tab === 'signin' ? (
+          <AuthForm key="signin" mode="signin" />
+        ) : (
+          <AuthForm key="signup" mode="signup" />
+        )}
 
         {tab === 'signup' && (
           <p className="text-muted-foreground mt-4 text-center text-xs">

@@ -75,7 +75,9 @@ export async function signIn(_: unknown, formData: FormData): Promise<AuthAction
     return { success: false, error: 'Too many sign-in attempts. Please wait a few minutes.' };
   }
 
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
 
   if (!email || !password) {
@@ -106,7 +108,9 @@ export async function signUp(_: unknown, formData: FormData): Promise<AuthAction
     return { success: false, error: 'Too many sign-up attempts. Please wait a few minutes.' };
   }
 
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
   const password = String(formData.get('password') ?? '');
 
   if (!email || !password) {
