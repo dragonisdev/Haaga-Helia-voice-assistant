@@ -27,6 +27,17 @@ const nextConfig: NextConfig = {
             value: '1; mode=block',
           },
           {
+            // Deny microphone globally; overridden below for the voice app pages
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+        ],
+      },
+      {
+        // Allow microphone only on the voice assistant pages (not /admin)
+        source: '/((?!admin).*)',
+        headers: [
+          {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
           },
