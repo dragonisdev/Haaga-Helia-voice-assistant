@@ -283,7 +283,7 @@ async def entrypoint(ctx: JobContext):
 
     agent_session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),
-        stt=gladia.STT(),
+        stt=gladia.STT(code_switching=False),
         tts=openai.TTS(voice="alloy", model="tts-1"),
         vad=silero.VAD.load(
             min_silence_duration=0.5,
