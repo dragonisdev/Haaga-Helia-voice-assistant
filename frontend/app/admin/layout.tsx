@@ -1,6 +1,6 @@
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { SignOutButton } from './sign-out-button';
-import Link from 'next/link';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,16 +32,16 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="text-foreground text-sm font-semibold hover:opacity-80 transition-opacity"
+              className="text-foreground text-sm font-semibold transition-opacity hover:opacity-80"
             >
               Admin Dashboard
             </Link>
-            <span className="text-muted-foreground text-xs hidden sm:inline">
+            <span className="text-muted-foreground hidden text-xs sm:inline">
               — Haaga-Helia Voice Assistant
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground hidden text-xs sm:block truncate max-w-[200px]">
+            <span className="text-muted-foreground hidden max-w-[200px] truncate text-xs sm:block">
               {user.email}
             </span>
             <SignOutButton />
@@ -74,7 +74,9 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
               Your account ({user.email}) does not have admin privileges. Contact an administrator
               to request access.
             </p>
-            <div className="mt-4"><SignOutButton /></div>
+            <div className="mt-4">
+              <SignOutButton />
+            </div>
           </div>
         </div>
       ) : (

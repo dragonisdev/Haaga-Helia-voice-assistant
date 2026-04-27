@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { createClient } from '@/lib/supabase/server';
 
 const PAGE_SIZE = 25;
 
@@ -126,11 +126,13 @@ export default async function AdminDashboardPage({
                     ? (s.conversation_messages[0] as { message_count?: number } | undefined)
                     : (s.conversation_messages as { message_count?: number } | null);
                   const usage = Array.isArray(s.session_usage_metrics)
-                    ? (s.session_usage_metrics[0] as {
-                        llm_prompt_tokens?: number;
-                        llm_completion_tokens?: number;
-                        tts_characters_count?: number;
-                      } | undefined)
+                    ? (s.session_usage_metrics[0] as
+                        | {
+                            llm_prompt_tokens?: number;
+                            llm_completion_tokens?: number;
+                            tts_characters_count?: number;
+                          }
+                        | undefined)
                     : (s.session_usage_metrics as {
                         llm_prompt_tokens?: number;
                         llm_completion_tokens?: number;
@@ -152,9 +154,7 @@ export default async function AdminDashboardPage({
                       <td className="text-foreground px-4 py-3">
                         {formatDuration(s.duration_seconds)}
                       </td>
-                      <td className="text-foreground px-4 py-3">
-                        {msgs?.message_count ?? '—'}
-                      </td>
+                      <td className="text-foreground px-4 py-3">{msgs?.message_count ?? '—'}</td>
                       <td className="text-foreground hidden px-4 py-3 lg:table-cell">
                         {usage?.llm_prompt_tokens?.toLocaleString() ?? '—'}
                       </td>
@@ -194,7 +194,7 @@ export default async function AdminDashboardPage({
             {page > 1 && (
               <Link
                 href={`/admin?page=${page - 1}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
-                className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm hover:opacity-80 transition-opacity"
+                className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm transition-opacity hover:opacity-80"
               >
                 ← Previous
               </Link>
@@ -202,7 +202,7 @@ export default async function AdminDashboardPage({
             {page < totalPages && (
               <Link
                 href={`/admin?page=${page + 1}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
-                className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm hover:opacity-80 transition-opacity"
+                className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm transition-opacity hover:opacity-80"
               >
                 Next →
               </Link>

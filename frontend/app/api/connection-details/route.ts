@@ -49,7 +49,7 @@ if (!cleanupIntervalId) {
     },
     10 * 60 * 1000
   );
-  
+
   // Ensure cleanup on module unload (for hot reload in dev)
   if (typeof process !== 'undefined') {
     process.on('beforeExit', () => {
