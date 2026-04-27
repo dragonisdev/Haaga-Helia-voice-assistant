@@ -5,11 +5,7 @@ from livekit.agents import AgentServer, cli
 from livekit.plugins import gladia, openai, silero  # noqa: F401
 
 
-async def _entrypoint(ctx):  # pragma: no cover
-    pass
-
-
-server = AgentServer(_entrypoint)
+server = AgentServer()
 
 if __name__ == "__main__":
     cli.run_app(server)
