@@ -199,8 +199,8 @@ export default function PrivacyPolicy() {
                 <strong>Right to Rectification:</strong> Correct inaccurate or incomplete data
               </li>
               <li>
-              <strong>Right to Erasure:</strong> Request deletion of your data (&quot;right to be
-              forgotten&quot;)
+                <strong>Right to Erasure:</strong> Request deletion of your data (&quot;right to be
+                forgotten&quot;)
               </li>
               <li>
                 <strong>Right to Restriction:</strong> Limit how we use your data
@@ -250,7 +250,9 @@ export default function PrivacyPolicy() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-foreground mb-4 text-2xl font-semibold">12. Children&apos;s Privacy</h2>
+            <h2 className="text-foreground mb-4 text-2xl font-semibold">
+              12. Children&apos;s Privacy
+            </h2>
             <p className="text-foreground/90 leading-relaxed">
               This service is intended for students of Haaga-Helia University, who are typically 18
               years or older. We do not knowingly collect data from individuals under 16 years of
@@ -264,8 +266,8 @@ export default function PrivacyPolicy() {
             </h2>
             <p className="text-foreground/90 leading-relaxed">
               We may update this privacy policy from time to time. Any changes will be posted on
-              this page with an updated &quot;Last Updated&quot; date. We encourage you to review this policy
-              periodically.
+              this page with an updated &quot;Last Updated&quot; date. We encourage you to review
+              this policy periodically.
             </p>
           </section>
 

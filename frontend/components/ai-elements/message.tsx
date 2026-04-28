@@ -162,7 +162,7 @@ export const MessageBranchContent = ({ children, ...props }: MessageBranchConten
     if (branches.length !== childrenArray.length) {
       setBranches(childrenArray);
     }
-    
+
     // Cleanup function to prevent memory leaks
     return () => {
       // No specific cleanup needed here, but good practice to include

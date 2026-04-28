@@ -23,13 +23,13 @@ export default async function MainLayout({ children }: MainLayoutProps) {
           <img
             src={logo}
             alt={`${companyName} Logo`}
-            className="block h-6 w-auto object-contain dark:hidden md:h-8"
+            className="block h-6 w-auto object-contain md:h-8 dark:hidden"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoDark ?? logo}
             alt={`${companyName} Logo`}
-            className="hidden h-6 w-auto object-contain dark:block md:h-8"
+            className="hidden h-6 w-auto object-contain md:h-8 dark:block"
           />
         </a>
         <span className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">

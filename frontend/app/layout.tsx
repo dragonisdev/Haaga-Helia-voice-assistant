@@ -1,6 +1,7 @@
 import { Roboto } from 'next/font/google';
 import localFont from 'next/font/local';
 import { headers } from 'next/headers';
+import { Analytics } from '@vercel/analytics/next';
 import { ThemeProvider } from '@/components/app/theme-provider';
 import { cn } from '@/lib/shadcn/utils';
 import { getAppConfig, getStyles } from '@/lib/utils';
@@ -73,6 +74,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         >
           {children}
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
