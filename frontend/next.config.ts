@@ -1,11 +1,10 @@
 import type { NextConfig } from 'next';
-import path from 'path';
 
 const nextConfig: NextConfig = {
-  // Prevent Next.js from walking up to F:\VS Code\package-lock.json and
-  // misidentifying that directory as the workspace root, which breaks the
-  // React Client Manifest on Windows.
-  outputFileTracingRoot: path.join(__dirname, '../'),
+  // Prevent Next.js from walking up to a stray lockfile in a parent directory
+  // and misidentifying it as the workspace root (breaks React Client Manifest on Windows).
+  // Setting this to __dirname (the frontend dir) is safe on both local and Vercel.
+  outputFileTracingRoot: __dirname,
   /* config options here */
   eslint: {
     ignoreDuringBuilds: true,
