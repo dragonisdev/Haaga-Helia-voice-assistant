@@ -60,6 +60,15 @@ export default async function AdminDashboardPage({
           </p>
         </div>
 
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        {/* Export */}
+        <a
+          href="/admin/export"
+          className="border-border bg-background text-foreground rounded-md border px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap"
+        >
+          ↓ Download CSV
+        </a>
+
         {/* Search */}
         <form method="GET" className="flex gap-2">
           <input
@@ -83,6 +92,7 @@ export default async function AdminDashboardPage({
             </Link>
           )}
         </form>
+        </div>
       </div>
 
       {error && (
